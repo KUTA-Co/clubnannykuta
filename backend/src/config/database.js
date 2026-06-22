@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+let connectionPromise = null;
+let listenersAttached = false;
+
 const connectDB = async () => {
   if (!process.env.MONGODB_URI) {
     console.warn('⚠️  MONGODB_URI not set — database-backed routes will be unavailable until MongoDB is configured.');
@@ -10,8 +13,12 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+    connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
       // Fail fast on a stale/idle socket instead of buffering queries forever
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
@@ -19,26 +26,33 @@ const connectDB = async () => {
       maxPoolSize: 10,
     });
 
+    const conn = await connectionPromise;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error:', err);
-    });
+    if (!listenersAttached) {
+      listenersAttached = true;
 
-    mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
-    });
+      // Handle connection events
+      mongoose.connection.on('error', (err) => {
+        console.error('MongoDB connection error:', err);
+      });
 
-    // Graceful shutdown
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed through app termination');
-      process.exit(0);
-    });
+      mongoose.connection.on('disconnected', () => {
+        console.log('MongoDB disconnected');
+        connectionPromise = null;
+      });
+
+      // Graceful shutdown
+      process.once('SIGINT', async () => {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed through app termination');
+        process.exit(0);
+      });
+    }
 
     return conn;
   } catch (error) {
+    connectionPromise = null;
     console.error('Error connecting to MongoDB:', error.message);
     if (process.env.VERCEL === '1') {
       return null;

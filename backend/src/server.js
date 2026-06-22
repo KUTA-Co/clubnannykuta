@@ -146,6 +146,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+const ensureDatabase = async (req, res, next) => {
+  try {
+    const connection = await connectDB();
+    if (!connection) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is not available. Please try again shortly.'
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection middleware error:', error);
+    res.status(503).json({
+      success: false,
+      message: 'Database is not available. Please try again shortly.'
+    });
+  }
+};
+
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path === '/stripe/webhook') {
+    return next();
+  }
+  return ensureDatabase(req, res, next);
+});
+
 // Form routes (contact, family application, nanny application)
 app.use('/api/forms', formLimiter, formRoutes);
 
