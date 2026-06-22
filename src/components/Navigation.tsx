@@ -27,8 +27,8 @@ export function Navigation() {
   const navLinks = [
     { path: "/", label: "Our Program" },
     { path: "/about", label: "About Us" },
-    { path: "/become-nanny", label: "Nannies" },
-    { path: "/for-sitters", label: "Sitters" },
+    { path: "/become-nanny", label: "Nanny Services" },
+    { path: "/for-sitters", label: "Sitter Services" },
     { path: "/contact", label: "Contact" },
   ];
 
@@ -68,12 +68,12 @@ export function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-6 relative z-10">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-6 relative z-10">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className="text-sm font-medium transition-colors"
+                className="text-xs xl:text-sm font-medium transition-colors"
                 style={{
                   color: isActive(link.path) ? accentColor : '#4A4A4A'
                 }}

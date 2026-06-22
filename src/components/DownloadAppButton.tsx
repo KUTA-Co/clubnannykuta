@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Share, PlusSquare, MoreVertical, ExternalLink } from "lucide-react";
+import { Download, Share, PlusSquare, ExternalLink } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { useToast } from "@/hooks/use-toast";
 
 interface DownloadAppButtonProps {
   className?: string;
@@ -53,12 +54,13 @@ function EdgeAppsIcon() {
 
 /**
  * Reusable "Download App" button. Always gives the user clear, visible feedback:
- * - Android/desktop with a native prompt available -> fires it.
+ * - Android/desktop with a native prompt available -> fires it and confirms the install started.
  * - Otherwise -> opens an instructions modal tailored to the device
- *   (iOS Safari, Android/desktop browser menu, or an in-app-browser warning).
+ *   (iOS Safari, Android/desktop browser install option, or an in-app-browser warning).
  */
 export function DownloadAppButton({ className, variant = "outline", children }: DownloadAppButtonProps) {
   const { isIOS, promptInstall } = useInstallPrompt();
+  const { toast } = useToast();
   const [instructionMode, setInstructionMode] = useState<InstallInstructionMode | null>(null);
 
   const inApp = isInAppBrowser();
@@ -85,11 +87,17 @@ export function DownloadAppButton({ className, variant = "outline", children }: 
     }
 
     // Android and non-Apple desktop: fire the native prompt if the browser offers it,
-    // otherwise fall back to the instructions modal so something always shows.
+    // otherwise show instructions that point to the browser's own install option.
     const installed = await promptInstall();
-    if (!installed) {
-      setInstructionMode(firefoxDesktop ? "firefox-desktop" : windowsDesktop ? "windows-desktop" : "standard");
+    if (installed) {
+      toast({
+        title: "Download Started",
+        description: "Club Nanny is being added to this device.",
+      });
+      return;
     }
+
+    setInstructionMode(firefoxDesktop ? "firefox-desktop" : windowsDesktop ? "windows-desktop" : "standard");
   };
 
   const Step = ({ n, children }: { n: number; children: React.ReactNode }) => (
@@ -117,11 +125,9 @@ export function DownloadAppButton({ className, variant = "outline", children }: 
                 </p>
                 <div className="space-y-4">
                   <Step n={1}>
-                    <span>Tap the menu</span>
-                    <MoreVertical className="w-5 h-5" />
-                    <span>(or</span>
+                    <span>Use the app's</span>
                     <Share className="w-5 h-5" />
-                    <span>)</span>
+                    <span>Share or browser option</span>
                   </Step>
                   <Step n={2}>
                     <span>Choose</span>
@@ -195,13 +201,13 @@ export function DownloadAppButton({ className, variant = "outline", children }: 
                 <p className="text-[#4A4A4A]/70 text-center mb-6">To install on Android or desktop:</p>
                 <div className="space-y-4">
                   <Step n={1}>
-                    <span>Tap the menu</span>
-                    <MoreVertical className="w-5 h-5" />
-                    <span>(top-right)</span>
+                    <span>Look for the browser's install prompt, app icon, or</span>
+                    <Download className="w-5 h-5" />
+                    <span>install button</span>
                   </Step>
                   <Step n={2}><span>Choose "Install app" or "Add to Home screen"</span></Step>
                   <Step n={3}>
-                    <span>On Microsoft Edge, use the</span>
+                    <span>On Microsoft Edge, click the</span>
                     <EdgeAppsIcon />
                     <span>Apps icon if shown</span>
                   </Step>

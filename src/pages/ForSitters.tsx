@@ -30,12 +30,18 @@ export default function ForSitters() {
 
     // Android/desktop: fire the native prompt if available, otherwise guide them.
     const installed = await promptInstall();
-    if (!installed) {
+    if (installed) {
       toast({
-        title: "Install Club Nanny",
-        description: "Open your browser menu and choose \"Install app\" / \"Add to Home screen\".",
+        title: "Download Started",
+        description: "Club Nanny is being added to this device.",
       });
+      return;
     }
+
+    toast({
+      title: "Install Club Nanny",
+      description: "Look for the browser install option in the address bar, toolbar, or install popup.",
+    });
   };
 
   const faqs = [

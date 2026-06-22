@@ -1,8 +1,9 @@
 // Club Nanny Service Worker - Caching for performance + push notifications
-const CACHE_NAME = 'clubnanny-v8';
+const CACHE_NAME = 'clubnanny-v9';
 const STATIC_ASSETS = [
   '/clubnannynobg.png',
-  '/favicon.svg',
+  '/favicon-32.png',
+  '/apple-touch-icon.png',
   '/icon-192.png',
   '/icon-512.png',
 ];
@@ -102,7 +103,7 @@ self.addEventListener('push', (event) => {
     const options = {
       body: data.body || 'You have a new notification',
       icon: '/icon-192.png',
-      badge: '/favicon.svg',
+      badge: '/icon-192.png',
       vibrate: [100, 50, 100],
       data: {
         url: data.url || '/',
@@ -122,7 +123,7 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification('Club Nanny', {
         body: text,
         icon: '/icon-192.png',
-        badge: '/favicon.svg',
+        badge: '/icon-192.png',
       })
     );
   }

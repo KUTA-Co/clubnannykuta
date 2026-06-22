@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { X, Download, Share } from 'lucide-react';
 
 export function InstallPrompt() {
   const { canShow, isIOS, promptInstall, dismiss } = useInstallPrompt();
+  const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
 
   if (!canShow || !isVisible) {
@@ -14,6 +16,10 @@ export function InstallPrompt() {
   const handleInstall = async () => {
     const installed = await promptInstall();
     if (installed) {
+      toast({
+        title: 'Download Started',
+        description: 'Club Nanny is being added to this device.',
+      });
       setIsVisible(false);
     }
   };
@@ -29,9 +35,9 @@ export function InstallPrompt() {
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-12 h-12 bg-sage/10 rounded-lg flex items-center justify-center">
             <img
-              src="/favicon.svg"
+              src="/icon-192.png"
               alt="Club Nanny"
-              className="w-8 h-8"
+              className="w-8 h-8 rounded-lg"
             />
           </div>
           <div className="flex-1 min-w-0">
