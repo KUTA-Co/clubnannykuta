@@ -1,0 +1,35 @@
+const API_URL = import.meta.env.VITE_API_URL || "";
+
+type SittingProfileResponse = {
+  authenticated?: boolean;
+  role?: "family" | "nanny" | "sitter" | "admin";
+  hasSitterProfile?: boolean;
+  hasFamilyProfile?: boolean;
+  user?: {
+    role?: "family" | "nanny" | "sitter" | "admin";
+  };
+};
+
+export async function resolveSittingAppRoute(token: string | null) {
+  if (!token) return "/login";
+
+  let target = "/login";
+
+  try {
+    const response = await fetch(`${API_URL}/api/sitting/auth/check-profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = (await response.json()) as SittingProfileResponse;
+    const role = data.role || data.user?.role;
+
+    if (data.authenticated) {
+      if (role === "admin") target = "/admin";
+      else if (data.hasSitterProfile) target = "/sitting/sitter";
+      else if (data.hasFamilyProfile) target = "/sitting/family";
+    }
+  } catch {
+    // Keep the safe sign-in fallback if the profile check cannot complete.
+  }
+
+  return target;
+}

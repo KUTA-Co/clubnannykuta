@@ -1,0 +1,33 @@
+{
+  "name": "club-nanny-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Club Nanny - Email service",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "create-admin": "node src/scripts/createAdmin.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.3.1",
+    "form-data": "^4.0.5",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mailgun.js": "^12.7.1",
+    "mongoose": "^8.2.0",
+    "pdfkit": "^0.18.0",
+    "stripe": "^14.18.0",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

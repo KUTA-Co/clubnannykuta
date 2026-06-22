@@ -1,0 +1,27 @@
+.gradient-text-animated {
+  background: linear-gradient(
+    90deg,
+    #8BA99E 0%,
+    #5a7d71 25%,
+    #a8c5b8 50%,
+    #5a7d71 75%,
+    #8BA99E 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}

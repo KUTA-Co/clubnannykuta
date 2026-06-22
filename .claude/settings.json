@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(node --check src/routes/stripeRoutes.js)",
+      "Bash(node --check src/routes/sittingFamilyRoutes.js)",
+      "Bash(node --check src/routes/sittingAdminRoutes.js)",
+      "Bash(node --check src/services/stripeService.js)",
+      "Bash(node --check src/services/matchingService.js)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('typescript dep:', \\(p.devDependencies||{}\\).typescript || \\(p.dependencies||{}\\).typescript\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node --check src/middleware/sanitize.js)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -m 8 -w \"\\\\nHTTP %{http_code}\\\\n\" http://localhost:5001/api/health)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
+    ]
+  }
+}

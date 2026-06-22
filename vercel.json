@@ -1,0 +1,22 @@
+{
+  "rewrites": [
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/home", "destination": "/index.html" },
+    { "source": "/about", "destination": "/index.html" },
+    { "source": "/program", "destination": "/index.html" },
+    { "source": "/for-families", "destination": "/index.html" },
+    { "source": "/become-nanny", "destination": "/index.html" },
+    { "source": "/for-nannies", "destination": "/index.html" },
+    { "source": "/for-sitters", "destination": "/index.html" },
+    { "source": "/contact", "destination": "/index.html" },
+    { "source": "/apply-family", "destination": "/index.html" },
+    { "source": "/apply-nanny", "destination": "/index.html" },
+    { "source": "/application-submitted", "destination": "/index.html" },
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/sitting/:path*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/:path*", "destination": "/index.html" },
+    { "source": "/terms", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" }
+  ]
+}
