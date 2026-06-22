@@ -138,7 +138,7 @@ export default function SitterDashboard() {
         {recentJobs.length === 0 ? (
           <div className="bg-[#F5D5E5]/30 rounded-xl p-6 text-center">
             <Briefcase className="w-8 h-8 mx-auto mb-2" style={{ color: '#C77DA3' }} />
-            <p className="text-[#4A4A4A]/60 text-sm">No jobs available in your area right now</p>
+            <p className="text-[#4A4A4A]/60 text-sm">No open jobs right now</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -225,14 +225,7 @@ export default function SitterDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          to="/sitting/sitter/availability"
-          className="bg-white rounded-xl p-4 border border-gray-100 text-center hover:shadow-md transition-shadow"
-        >
-          <Calendar className="w-6 h-6 mx-auto mb-2" style={{ color: '#E8A0BF' }} />
-          <p className="text-sm font-medium text-[#4A4A4A]">Set Availability</p>
-        </Link>
+      <div className="grid grid-cols-1 gap-3">
         <Link
           to="/sitting/sitter/profile"
           className="bg-white rounded-xl p-4 border border-gray-100 text-center hover:shadow-md transition-shadow"

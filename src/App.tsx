@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import { Preloader } from "@/components/Preloader";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -55,7 +55,6 @@ const SittingRegistrationComplete = lazy(() => import("./pages/sitting/Registrat
 import SitterDashboardLayout from "./components/sitting/SitterDashboardLayout";
 const SitterDashboard = lazy(() => import("./pages/sitting/sitter/Dashboard"));
 const SitterProfile = lazy(() => import("./pages/sitting/sitter/Profile"));
-const SitterAvailability = lazy(() => import("./pages/sitting/sitter/Availability"));
 const SitterJobs = lazy(() => import("./pages/sitting/sitter/Jobs"));
 const SitterJobDetail = lazy(() => import("./pages/sitting/sitter/JobDetail"));
 const SitterBookings = lazy(() => import("./pages/sitting/sitter/Bookings"));
@@ -162,7 +161,7 @@ const App = () => {
               >
                 <Route index element={<SitterDashboard />} />
                 <Route path="profile" element={<SitterProfile />} />
-                <Route path="availability" element={<SitterAvailability />} />
+                <Route path="availability" element={<Navigate to="/sitting/sitter" replace />} />
                 <Route path="jobs" element={<SitterJobs />} />
                 <Route path="jobs/:id" element={<SitterJobDetail />} />
                 <Route path="bookings" element={<SitterBookings />} />

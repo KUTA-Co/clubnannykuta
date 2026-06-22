@@ -5,7 +5,6 @@ import { NotificationBell } from "@/components/NotificationBell";
 import {
   LayoutDashboard,
   User,
-  Calendar,
   Briefcase,
   Clock,
   LogOut
@@ -14,7 +13,6 @@ import {
 const navItems = [
   { path: "/sitting/sitter", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { path: "/sitting/sitter/profile", label: "My Profile", icon: User },
-  { path: "/sitting/sitter/availability", label: "Availability", icon: Calendar },
   { path: "/sitting/sitter/jobs", label: "Available Jobs", icon: Briefcase },
   { path: "/sitting/sitter/bookings", label: "My Bookings", icon: Clock },
 ];
@@ -23,7 +21,6 @@ const navItems = [
 const mobileNavItems = [
   { path: "/sitting/sitter", label: "Home", icon: LayoutDashboard, exact: true },
   { path: "/sitting/sitter/jobs", label: "Jobs", icon: Briefcase },
-  { path: "/sitting/sitter/availability", label: "Calendar", icon: Calendar },
   { path: "/sitting/sitter/bookings", label: "Bookings", icon: Clock },
   { path: "/sitting/sitter/profile", label: "Profile", icon: User },
 ];
@@ -37,7 +34,7 @@ export function SitterDashboardLayout() {
     if (exact) {
       return location.pathname === path;
     }
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   const handleLogout = () => {

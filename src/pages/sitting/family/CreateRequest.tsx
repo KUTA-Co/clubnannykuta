@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { Loader2, Send, MapPin } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+const TIME_VALUE_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const parseDateTime = (dateValue: string, timeValue: string) => {
   const [year, month, day] = dateValue.split('-').map(Number);
@@ -35,8 +38,12 @@ const formatDateInputValue = (date: Date) => {
 
 const requestSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  startTime: z.string()
+    .min(1, "Start time is required")
+    .refine((value) => !value || TIME_VALUE_PATTERN.test(value), "Choose a complete start time"),
+  endTime: z.string()
+    .min(1, "End time is required")
+    .refine((value) => !value || TIME_VALUE_PATTERN.test(value), "Choose a complete end time"),
   useProfileAddress: z.boolean().default(true),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -139,6 +146,14 @@ export default function CreateRequest() {
   );
   const shouldUseProfileAddress = Boolean(profile && profileHasLocation && useProfileAddress);
   const showCustomAddress = !shouldUseProfileAddress;
+  const fieldClass = (hasError?: boolean) => cn(
+    "mt-1",
+    hasError && "border-red-500 ring-1 ring-red-500/40 focus-visible:ring-red-500"
+  );
+  const pickerClass = (hasError?: boolean) => cn(
+    "mt-1",
+    hasError && "border-red-500 ring-1 ring-red-500/40 focus-visible:ring-red-500"
+  );
 
   useEffect(() => {
     fetchProfile();
@@ -205,7 +220,8 @@ export default function CreateRequest() {
     setSubmitting(true);
     try {
       if (data.useProfileAddress && !profileHasLocation) {
-        form.setValue('useProfileAddress', false);
+        form.setValue('useProfileAddress', false, { shouldValidate: true });
+        await form.trigger(['address', 'city', 'state', 'postalCode']);
         toast({
           title: "Location needed",
           description: "Please add the job address before posting your request.",
@@ -304,8 +320,9 @@ export default function CreateRequest() {
                 id="date"
                 type="date"
                 {...form.register("date")}
-                className="mt-1"
+                className={fieldClass(Boolean(form.formState.errors.date))}
                 min={minDate}
+                aria-invalid={Boolean(form.formState.errors.date)}
               />
               {form.formState.errors.date && (
                 <p className="text-red-500 text-sm mt-1">{form.formState.errors.date.message}</p>
@@ -315,11 +332,17 @@ export default function CreateRequest() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="startTime">Start Time</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  {...form.register("startTime")}
-                  className="mt-1"
+                <Controller
+                  name="startTime"
+                  control={form.control}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={(value) => field.onChange(value)}
+                      placeholder="Select start time"
+                      className={pickerClass(Boolean(form.formState.errors.startTime))}
+                    />
+                  )}
                 />
                 {form.formState.errors.startTime && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.startTime.message}</p>
@@ -327,11 +350,17 @@ export default function CreateRequest() {
               </div>
               <div>
                 <Label htmlFor="endTime">End Time</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  {...form.register("endTime")}
-                  className="mt-1"
+                <Controller
+                  name="endTime"
+                  control={form.control}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={(value) => field.onChange(value)}
+                      placeholder="Select end time"
+                      className={pickerClass(Boolean(form.formState.errors.endTime))}
+                    />
+                  )}
                 />
                 {form.formState.errors.endTime && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.endTime.message}</p>
@@ -355,7 +384,12 @@ export default function CreateRequest() {
                 <Checkbox
                   id="useProfileAddress"
                   checked={useProfileAddress}
-                  onCheckedChange={(checked) => form.setValue('useProfileAddress', checked as boolean)}
+                  onCheckedChange={(checked) => {
+                    form.setValue('useProfileAddress', checked as boolean, { shouldValidate: true });
+                    if (checked) {
+                      form.clearErrors(['address', 'city', 'state', 'postalCode']);
+                    }
+                  }}
                 />
                 <div className="flex-1">
                   <Label htmlFor="useProfileAddress" className="cursor-pointer">
@@ -383,7 +417,8 @@ export default function CreateRequest() {
                   <Input
                     id="address"
                     {...form.register("address")}
-                    className="mt-1"
+                    className={fieldClass(Boolean(form.formState.errors.address))}
+                    aria-invalid={Boolean(form.formState.errors.address)}
                   />
                   {form.formState.errors.address && (
                     <p className="text-red-500 text-sm mt-1">{form.formState.errors.address.message}</p>
@@ -395,7 +430,8 @@ export default function CreateRequest() {
                     <Input
                       id="city"
                       {...form.register("city")}
-                      className="mt-1"
+                      className={fieldClass(Boolean(form.formState.errors.city))}
+                      aria-invalid={Boolean(form.formState.errors.city)}
                     />
                     {form.formState.errors.city && (
                       <p className="text-red-500 text-sm mt-1">{form.formState.errors.city.message}</p>
@@ -406,7 +442,8 @@ export default function CreateRequest() {
                     <Input
                       id="state"
                       {...form.register("state")}
-                      className="mt-1"
+                      className={fieldClass(Boolean(form.formState.errors.state))}
+                      aria-invalid={Boolean(form.formState.errors.state)}
                     />
                     {form.formState.errors.state && (
                       <p className="text-red-500 text-sm mt-1">{form.formState.errors.state.message}</p>
@@ -417,7 +454,8 @@ export default function CreateRequest() {
                     <Input
                       id="postalCode"
                       {...form.register("postalCode")}
-                      className="mt-1"
+                      className={fieldClass(Boolean(form.formState.errors.postalCode))}
+                      aria-invalid={Boolean(form.formState.errors.postalCode)}
                     />
                     {form.formState.errors.postalCode && (
                       <p className="text-red-500 text-sm mt-1">{form.formState.errors.postalCode.message}</p>
@@ -444,7 +482,8 @@ export default function CreateRequest() {
                   min="1"
                   max="10"
                   {...form.register("numberOfChildren")}
-                  className="mt-1"
+                  className={fieldClass(Boolean(form.formState.errors.numberOfChildren))}
+                  aria-invalid={Boolean(form.formState.errors.numberOfChildren)}
                 />
                 {form.formState.errors.numberOfChildren && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.numberOfChildren.message}</p>

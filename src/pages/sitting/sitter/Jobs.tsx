@@ -161,7 +161,7 @@ export default function SitterJobs() {
             </div>
             <h2 className="text-lg font-medium text-[#4A4A4A] mb-2">No Jobs Available</h2>
             <p className="text-[#4A4A4A]/60">
-              There are no babysitting jobs in your area right now. Check back soon!
+              There are no open babysitting jobs right now. Check back soon!
             </p>
           </CardContent>
         </Card>

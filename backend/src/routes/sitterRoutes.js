@@ -9,7 +9,7 @@ import {
   Review,
   FamilyReview
 } from '../models/index.js';
-import matchingService, { areaMatchConditions } from '../services/matchingService.js';
+import matchingService from '../services/matchingService.js';
 import notificationService from '../services/notificationService.js';
 
 const router = express.Router();
@@ -329,7 +329,7 @@ router.delete('/availability/block/:slotId', async (req, res) => {
 
 /**
  * GET /api/sitter/jobs
- * Get available jobs in the sitter's area
+ * Get available jobs
  */
 router.get('/jobs', async (req, res) => {
   try {
@@ -352,13 +352,12 @@ router.get('/jobs', async (req, res) => {
     // Lazily expire past-dated open requests before listing
     await matchingService.expirePastOpenRequests();
 
-    // Find open jobs in the sitter's area (same city/state OR shared ZIP prefix)
+    // Find open jobs. Keep the availability flag per job so sitters can see new
+    // requests even when their profile location is missing or differs from the family.
     const jobQuery = {
       status: { $in: ['open', 'responses_received'] },
       date: { $gte: startOfToday() } // Include same-day jobs that have not expired yet
     };
-    const areaOr = areaMatchConditions(profile);
-    if (areaOr) jobQuery.$or = areaOr;
 
     const jobs = await BookingRequest.find(jobQuery)
       .populate('familyId', 'householdName city state')
