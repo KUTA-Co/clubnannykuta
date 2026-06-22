@@ -108,26 +108,25 @@ export function SitterDashboardLayout() {
       <div className="lg:hidden min-h-screen flex flex-col bg-white">
         {/* Mobile Header - Clean white */}
         <header className="px-4 pt-3 pb-3 bg-white border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9" aria-hidden="true" />
-
-            {/* Logo centered */}
-            <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
+          <div className="flex items-center justify-between gap-3">
+            <Link to="/sitting/sitter" className="shrink-0">
+              <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
+            </Link>
 
             {/* Bell + profile */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <NotificationBell />
               <button
                 type="button"
                 onClick={handleLogout}
                 aria-label="Sign out"
                 title="Sign out"
-                className="w-9 h-9 rounded-full flex items-center justify-center text-[#C77DA3] transition-colors hover:bg-[#F5D5E5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C77DA3] focus-visible:ring-offset-2"
+                className="h-8 rounded-full bg-[#F5D5E5] px-3 text-xs font-semibold text-[#9B5A80] transition-colors hover:bg-[#E8A0BF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C77DA3] focus-visible:ring-offset-2"
               >
-                <LogOut className="w-4 h-4" />
+                Sign Out
               </button>
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
                 style={{ backgroundColor: '#E8A0BF' }}
               >
                 <User className="w-4 h-4" aria-hidden="true" />

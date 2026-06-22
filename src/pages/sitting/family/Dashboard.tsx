@@ -104,12 +104,13 @@ export default function FamilyDashboard() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold font-heading text-[#4A4A4A]">
-          Welcome, {profile?.householdName || 'Family'}!
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <h1 className="min-w-0 flex-1 text-xl sm:text-2xl font-bold font-heading leading-tight text-[#4A4A4A]">
+          <span className="block sm:inline">Welcome, </span>
+          <span className="block sm:inline break-words">{profile?.householdName || 'Family'}!</span>
         </h1>
-        <Link to="/sitting/family/request">
-          <Button style={{ backgroundColor: '#C77DA3' }} className="text-white hover:opacity-90">
+        <Link to="/sitting/family/request" className="shrink-0">
+          <Button style={{ backgroundColor: '#C77DA3' }} className="h-10 whitespace-nowrap px-3 text-sm text-white hover:opacity-90">
             <PlusCircle className="w-4 h-4 mr-2" /> New Request
           </Button>
         </Link>
