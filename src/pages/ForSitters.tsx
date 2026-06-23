@@ -226,7 +226,7 @@ export default function ForSitters() {
               <div className="rounded-xl md:rounded-2xl p-4 md:p-6 bg-white">
                 <span className="text-2xl md:text-3xl mb-2 md:mb-3 block" style={{ color: '#E8A0BF' }}>✦</span>
                 <p className="text-[#4A4A4A]/80 text-sm md:text-base">
-                  Download the Club Nanny app and create your family profile.
+                  Complete the family application form and download the Club Nanny app.
                 </p>
               </div>
 
@@ -253,7 +253,7 @@ export default function ForSitters() {
               <div className="rounded-xl md:rounded-2xl p-4 md:p-6 bg-white">
                 <span className="text-2xl md:text-3xl mb-2 md:mb-3 block" style={{ color: '#E8A0BF' }}>✦</span>
                 <p className="text-[#4A4A4A]/80 text-xs md:text-sm">
-                  Complete the family application form and download the Club Nanny app.
+                  Complete a simple application about your experience, values, and availability.
                 </p>
               </div>
 
