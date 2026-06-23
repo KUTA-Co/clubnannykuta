@@ -1,4 +1,5 @@
 import express from 'express';
+import connectDB from '../config/database.js';
 import stripeService from '../services/stripeService.js';
 import emailService from '../services/emailService.js';
 import notificationService from '../services/notificationService.js';
@@ -155,11 +156,15 @@ router.post('/webhook', async (req, res) => {
       }
 
       try {
+        const connection = await connectDB();
+        if (!connection) {
+          throw new Error('Database unavailable for Stripe webhook processing');
+        }
         await handlePaymentSuccess(session);
         console.log('Payment processed successfully for session:', session.id);
       } catch (error) {
         console.error('Error processing payment:', error);
-        // Still return 200 to acknowledge receipt
+        return res.status(500).json({ message: 'Webhook processing failed' });
       }
       break;
     }
@@ -170,7 +175,16 @@ router.post('/webhook', async (req, res) => {
         console.log(`Ignoring checkout.session.expired for another Stripe integration: ${session.id}`);
         break;
       }
-      await handlePaymentExpired(session);
+      try {
+        const connection = await connectDB();
+        if (!connection) {
+          throw new Error('Database unavailable for Stripe webhook processing');
+        }
+        await handlePaymentExpired(session);
+      } catch (error) {
+        console.error('Error processing expired payment:', error);
+        return res.status(500).json({ message: 'Webhook processing failed' });
+      }
       break;
     }
 
