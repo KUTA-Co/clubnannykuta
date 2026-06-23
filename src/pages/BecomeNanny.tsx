@@ -304,6 +304,12 @@ export default function BecomeNanny() {
                   </div>
                   <span className="text-[#4A4A4A]/80">Relationships that last beyond placements</span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5" style={{ backgroundColor: '#8BA99E' }}>
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-[#4A4A4A]/80">No Commission Fees - Every dollar paid by families goes directly to the caregiver</span>
+                </li>
               </ul>
             </div>
 
@@ -336,6 +342,12 @@ export default function BecomeNanny() {
                     <Check className="h-3 w-3 text-white" />
                   </div>
                   <span className="text-[#4A4A4A]/80">Experience rooted in faith and connection</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5" style={{ backgroundColor: '#8BA99E' }}>
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <span className="text-[#4A4A4A]/80">No Commission Fees - Every dollar paid by families goes directly to the caregiver</span>
                 </li>
               </ul>
             </div>

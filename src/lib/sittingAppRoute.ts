@@ -11,9 +11,9 @@ type SittingProfileResponse = {
 };
 
 export async function resolveSittingAppRoute(token: string | null) {
-  if (!token) return "/login";
+  if (!token) return "/sitting/login";
 
-  let target = "/login";
+  let target = "/sitting/login";
 
   try {
     const response = await fetch(`${API_URL}/api/sitting/auth/check-profile`, {

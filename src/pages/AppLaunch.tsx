@@ -11,7 +11,7 @@ export default function AppLaunch() {
     if (isLoading) return;
 
     if (!isAuthenticated || !token) {
-      setTarget("/login");
+      setTarget("/sitting/login");
       return;
     }
 

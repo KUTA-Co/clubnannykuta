@@ -42,7 +42,6 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        toast({ title: "Welcome back!" });
         await redirectAfterLogin();
       } else {
         toast({

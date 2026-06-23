@@ -10,7 +10,7 @@ interface SittingProtectedRouteProps {
 /**
  * Guards the Club Nanny sitter-side dashboards.
  * - While auth is still loading, shows a spinner (avoids a flash redirect).
- * - If not logged in, redirects to /login (remembering where they were headed).
+ * - If not logged in, redirects to /sitting/login (remembering where they were headed).
  * - If logged in with the wrong role, sends them to their own dashboard.
  */
 export function SittingProtectedRoute({ children, role }: SittingProtectedRouteProps) {
@@ -26,7 +26,7 @@ export function SittingProtectedRoute({ children, role }: SittingProtectedRouteP
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/sitting/login" state={{ from: location }} replace />;
   }
 
   if (role && user?.role !== role) {

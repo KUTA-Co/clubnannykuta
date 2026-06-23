@@ -167,6 +167,10 @@ export default function ForNannies() {
                 <Check className="w-5 h-5 text-[#8BA99E] flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-[#4A4A4A]/70">Ongoing support throughout your placement</span>
               </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-[#8BA99E] flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-[#4A4A4A]/70">No commission fees - every dollar paid by families goes directly to the caregiver</span>
+              </li>
             </ul>
           </div>
 

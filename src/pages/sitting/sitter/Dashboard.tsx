@@ -26,7 +26,7 @@ interface Booking {
 }
 
 export default function SitterDashboard() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ availableJobs: 0, upcomingBookings: 0, completedJobs: 0, rating: 0, reviewCount: 0 });
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
@@ -87,14 +87,6 @@ export default function SitterDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
-      <div className="lg:block hidden">
-        <h1 className="text-2xl font-bold text-[#4A4A4A]">
-          Welcome back, {user?.firstName || 'Sitter'}!
-        </h1>
-        <p className="text-[#4A4A4A]/60">Here's what's happening today</p>
-      </div>
-
       {/* Stats Grid */}
       <div className="hidden grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-[#E8A0BF] to-[#C77DA3] rounded-2xl p-4 text-white">

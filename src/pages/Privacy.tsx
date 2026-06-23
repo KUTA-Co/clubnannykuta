@@ -51,15 +51,15 @@ export default function Privacy() {
 
     // Content
     addText("1. Information We Collect", 14, true);
-    addText("We collect information that you provide directly to us, including: Account information (name, email, phone number), Profile information (photos, bio, experience, certifications), Payment information, Communication data, and Usage data.", 10);
+    addText("We collect information that you provide directly to us, including: account information (name, email, phone number), application information, household and caregiver profile information, photos, bio, experience, certifications, payment and membership information, communication data, device notification preferences, and usage data.", 10);
     yPos += 6;
 
     addText("2. How We Use Your Information", 14, true);
-    addText("We use the information we collect to: Provide, maintain, and improve our services; Process transactions; Send technical notices and support messages; Respond to your comments and questions; Conduct background checks and verification; Detect, prevent, and address technical issues.", 10);
+    addText("We use the information we collect to: provide, maintain, and improve our services; review applications; process membership and application payments through Stripe; connect families with nannies and sitters; send technical notices, support messages, and app notifications; respond to your comments and questions; conduct background checks and verification; and detect, prevent, and address technical issues.", 10);
     yPos += 6;
 
     addText("3. Information Sharing", 14, true);
-    addText("We do not sell your personal information. We may share your information with other users as appropriate, with service providers, for legal compliance, or in connection with a business transfer.", 10);
+    addText("We do not sell your personal information. We may share your information with other users as appropriate for matching and bookings, with service providers such as Stripe, hosting, email, notification, and background-check providers, for legal compliance, or in connection with a business transfer.", 10);
     yPos += 6;
 
     addText("4. Data Security", 14, true);
@@ -78,11 +78,15 @@ export default function Privacy() {
     addText("Our service is not intended for children under 18. We do not knowingly collect personal information from children under 18.", 10);
     yPos += 6;
 
-    addText("8. Changes to This Policy", 14, true);
+    addText("8. Payments", 14, true);
+    addText("Payment information is processed by Stripe. This includes application fees, sitter application fees, and app membership payments. We do not store full card numbers on our servers. Stripe may collect and process payment data according to its own privacy policy.", 10);
+    yPos += 6;
+
+    addText("9. Changes to This Policy", 14, true);
     addText("We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.", 10);
     yPos += 6;
 
-    addText("9. Contact Us", 14, true);
+    addText("10. Contact Us", 14, true);
     addText("If you have any questions about this Privacy Policy, please contact us at Leigh@clubnanny.com", 10);
     yPos += 10;
 
@@ -113,9 +117,11 @@ export default function Privacy() {
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>Account information (name, email, phone number)</li>
-              <li>Profile information (photos, bio, experience, certifications)</li>
-              <li>Payment information</li>
-              <li>Communication data (messages between families and nannies)</li>
+              <li>Application information, including family needs, caregiver experience, faith background, and references</li>
+              <li>Household and caregiver profile information (photos, bio, experience, certifications, availability, and location details)</li>
+              <li>Payment and membership information</li>
+              <li>Communication data (messages and booking-related activity between families and caregivers)</li>
+              <li>Device notification preferences for the Club Nanny app</li>
               <li>Usage data (how you interact with our platform)</li>
             </ul>
           </div>
@@ -127,10 +133,12 @@ export default function Privacy() {
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>Provide, maintain, and improve our services</li>
-              <li>Process transactions and send related information</li>
+              <li>Review applications and process background-check or verification steps</li>
+              <li>Process application fees, sitter application fees, and app membership payments through Stripe</li>
+              <li>Connect families with nannies and sitters for matching and bookings</li>
               <li>Send you technical notices and support messages</li>
+              <li>Send app notifications about requests, responses, bookings, and payments when enabled</li>
               <li>Respond to your comments and questions</li>
-              <li>Conduct background checks and verification</li>
               <li>Detect, prevent, and address technical issues</li>
             </ul>
           </div>
@@ -141,8 +149,8 @@ export default function Privacy() {
               We do not sell your personal information. We may share your information in the following situations:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>With other users (nannies can see family profiles and vice versa, as appropriate)</li>
-              <li>With service providers who assist us in operating our platform</li>
+              <li>With other users (families and caregivers can see relevant profiles and booking details, as appropriate)</li>
+              <li>With service providers who assist us in operating our platform, including Stripe, hosting, email, notification, and background-check providers</li>
               <li>For legal compliance or to protect rights and safety</li>
               <li>In connection with a business transfer or merger</li>
             </ul>
@@ -190,7 +198,16 @@ export default function Privacy() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">8. Changes to This Policy</h2>
+            <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">8. Payments</h2>
+            <p className="leading-relaxed">
+              Payment information is processed by Stripe. This includes application fees, sitter application fees, and app membership payments.
+              We do not store full card numbers on our servers.
+              Stripe may collect and process payment data according to its own privacy policy.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">9. Changes to This Policy</h2>
             <p className="leading-relaxed">
               We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy 
               Policy on this page and updating the "Last updated" date.
@@ -198,7 +215,7 @@ export default function Privacy() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">9. Contact Us</h2>
+            <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">10. Contact Us</h2>
             <p className="leading-relaxed">
               If you have any questions about this Privacy Policy, please contact us at Leigh@clubnanny.com
             </p>
@@ -235,4 +252,3 @@ export default function Privacy() {
     </div>
   );
 }
-

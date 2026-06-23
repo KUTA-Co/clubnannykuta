@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ArrowRight, ArrowLeft, Check, User, Briefcase, Heart, Calendar, X } from "lucide-react";
 import { GlassButton } from "@/components/ui/effects";
 import { trackFormSubmit } from "@/lib/analytics";
+import { isStandaloneApp } from "@/lib/pwa";
 
 const steps = [
   { id: 1, name: "About You", icon: User },
@@ -21,6 +22,7 @@ const steps = [
 
 export default function NannyApplication() {
   const navigate = useNavigate();
+  const runningAsApp = isStandaloneApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openModal, setOpenModal] = useState<'terms' | 'privacy' | null>(null);
@@ -134,10 +136,10 @@ export default function NannyApplication() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FAF9F6' }}>
-      <Navigation />
+      {!runningAsApp && <Navigation />}
 
       {/* Hero Header */}
-      <section className="pt-[82px] px-3">
+      <section className={`${runningAsApp ? 'pt-3' : 'pt-[82px]'} px-3`}>
         <div className="rounded-3xl py-16 px-4 relative overflow-hidden" style={{ backgroundColor: '#4A4A4A' }}>
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-10 right-10 w-32 h-32 rounded-full border-4 border-white"></div>
@@ -590,10 +592,14 @@ export default function NannyApplication() {
             <div>
               <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">5. Payment Terms</h2>
               <p className="leading-relaxed mb-3">
-                <strong>Nanny Application Fee:</strong> $75 (non-refundable).
+                <strong>An Investment in Your Home:</strong> We understand that inviting someone into your home is one of the most important decisions you'll make.
+                Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.
               </p>
               <p className="leading-relaxed mb-3">
-                <strong>Family Application Fee:</strong> $250 (Annual fee, non-refundable).
+                <strong>Nanny Application Fee:</strong> $75 (non-refundable). This fee covers application review, interview process, background check, and entry into our nanny network.
+              </p>
+              <p className="leading-relaxed mb-3">
+                <strong>Family Application Fee:</strong> $250 (annual fee, non-refundable). With your application, you receive a detailed family consultation; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
               </p>
               <p className="leading-relaxed">
                 Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.

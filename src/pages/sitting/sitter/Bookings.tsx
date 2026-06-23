@@ -353,18 +353,13 @@ export default function SitterBookings() {
                           </p>
                         )}
 
-                        {/* Payment status (read-only — family pays through the app) */}
-                        <div className="mb-4">
-                          {booking.payment?.status === 'paid' ? (
+                        {booking.payment?.status === 'paid' && (
+                          <div className="mb-4">
                             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium" style={{ backgroundColor: '#D4EDDA', color: '#155724' }}>
                               <DollarSign className="w-4 h-4" /> Paid{booking.payment.amountCents ? ` · $${(booking.payment.amountCents / 100).toFixed(2)}` : ''}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium" style={{ backgroundColor: '#FFF3CD', color: '#856404' }}>
-                              <Clock className="w-4 h-4" /> Awaiting payment
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         {/* Review the family (past/completed) */}
                         {activeTab === 'past' && (

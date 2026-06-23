@@ -15,6 +15,7 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { DownloadAppButton } from "@/components/DownloadAppButton";
+import { isStandaloneApp } from "@/lib/pwa";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -66,6 +67,7 @@ export default function SitterRegistration() {
   const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const runningAsApp = isStandaloneApp();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -233,9 +235,9 @@ export default function SitterRegistration() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FAF9F6' }}>
-      <Navigation />
+      {!runningAsApp && <Navigation />}
 
-      <main className="flex-1 pt-24 pb-16 px-4">
+      <main className={`flex-1 ${runningAsApp ? 'pt-6' : 'pt-24'} pb-16 px-4`}>
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">

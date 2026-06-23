@@ -65,7 +65,7 @@ export default function Landing() {
     },
     {
       question: "What does it cost?",
-      answer: "Nanny Application Fee - $75: Covers your application review, interview process, background check, and entry into our nanny network.\n\nFamily Application Fee - $250: Covers your application review and matching process.\n\nLocal Nanny Placement - $500: Perfect for families seeking a part-time or full-time nanny who lives locally.\n\nLive-In Nanny Placement - $1,000: Ideal for families who prefer a nanny residing in their home for added flexibility and support.\n\nNanny wages are paid directly by families and are not included in these fees."
+      answer: "An Investment in Your Home: We understand that inviting someone into your home is one of the most important decisions you'll make. Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.\n\nNanny Application Fee - $75 (Non-refundable): This fee covers your application review, interview process, background check, and entry into our nanny network.\n\nFamily Application Fee - $250 (Annual fee, non-refundable): With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.\n\nNanny wages are paid directly by families and are not included in these fees. All fees are non-refundable."
     },
     {
       question: "What is the screening process?",

@@ -12,10 +12,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { initGA4 } from "@/lib/analytics";
-
-interface NavigatorStandalone extends Navigator {
-  standalone?: boolean;
-}
+import { isStandaloneApp } from "@/lib/pwa";
 
 // Lazy load public pages for code splitting
 const AppLaunch = lazy(() => import("./pages/AppLaunch"));
@@ -84,13 +81,6 @@ function AnalyticsTracker() {
   return null;
 }
 
-function isStandaloneApp() {
-  if (typeof window === "undefined") return false;
-
-  return window.matchMedia("(display-mode: standalone)").matches
-    || (window.navigator as NavigatorStandalone).standalone === true;
-}
-
 function HomeRoute() {
   return isStandaloneApp() ? <AppLaunch /> : <Program />;
 }
@@ -128,6 +118,7 @@ const App = () => {
               {/* Info Pages */}
               <Route path="/" element={<HomeRoute />} />
               <Route path="/app" element={<AppLaunch />} />
+              <Route path="/sitting" element={<AppLaunch />} />
               <Route path="/home" element={<Landing />} />
               <Route path="/about" element={<About />} />
               <Route path="/program" element={<Program />} />
@@ -144,6 +135,7 @@ const App = () => {
 
               {/* Club Nanny - Sign In */}
               <Route path="/login" element={<Login />} />
+              <Route path="/sitting/login" element={<Login />} />
 
               {/* Club Nanny - Sitter-side Registration */}
               <Route path="/sitting/register/sitter" element={<SitterRegistration />} />

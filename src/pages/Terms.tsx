@@ -56,7 +56,7 @@ export default function Terms() {
     yPos += 4;
 
     addText("2. Nature of Services", 14, true);
-    addText("Club Nanny is a nanny placement and matching service. We connect families and caregivers but are not the employer of any nanny. All employment relationships are solely between families and nannies. Club Nanny does not employ, supervise, or control any caregiver.", 10);
+    addText("Club Nanny provides nanny placement and sitter network services. We connect families and caregivers but are not the employer of any nanny or sitter. All employment or service relationships are solely between families and caregivers. Club Nanny does not employ, supervise, or control any caregiver.", 10);
     yPos += 4;
 
     addText("3. No Guarantee of Placement", 14, true);
@@ -64,8 +64,11 @@ export default function Terms() {
     yPos += 4;
 
     addText("4. Fees & Payment Terms", 14, true);
-    addText("Nanny Application Fee: $75 (non-refundable). This fee covers your application review, interview process, and entry into our nanny network.", 10);
-    addText("Family Application Fee: $250 (annual fee, non-refundable). This fee covers your application review and matching process.", 10);
+    addText("An Investment in Your Home: We understand that inviting someone into your home is one of the most important decisions you'll make. Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.", 10);
+    addText("Sitter: Application Fee - $45 (Non-refundable): This fee covers your application review, interview process, background check, and entry into our sitter network. Once approved you will download the Club Nanny app ($12/month) to have access to families looking to match with a sitter.", 10);
+    addText("Family: You will download the Club Nanny app ($20/month) and gain access to our carefully vetted, faith-aligned sitter network. Babysitter wages are paid directly by families.", 10);
+    addText("Nanny Application Fee - $75 (Non-refundable): This fee covers your application review, interview process, background check, and entry into our nanny network.", 10);
+    addText("Family Application Fee - $250 (Annual fee, non-refundable): With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.", 10);
     addText("Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.", 10);
     yPos += 4;
 
@@ -108,7 +111,7 @@ export default function Terms() {
     // Footer
     doc.setFontSize(9);
     doc.setTextColor(128, 128, 128);
-    doc.text("Last updated: April 23, 2026", margin, yPos);
+    doc.text("Last updated: June 23, 2026", margin, yPos);
     doc.text("www.clubnanny.com", pageWidth - margin - 30, yPos);
 
     doc.save("ClubNanny-Terms-of-Service.pdf");
@@ -135,10 +138,10 @@ export default function Terms() {
           <div>
             <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">2. Nature of Services</h2>
             <p className="leading-relaxed mb-3">
-              Club Nanny is a nanny placement and matching service. We connect families and caregivers but are not the employer of any nanny.
+              Club Nanny provides nanny placement and sitter network services. We connect families and caregivers but are not the employer of any nanny or sitter.
             </p>
             <p className="leading-relaxed">
-              All employment relationships are solely between families and nannies. Club Nanny does not employ, supervise, or control any caregiver.
+              All employment or service relationships are solely between families and caregivers. Club Nanny does not employ, supervise, or control any caregiver.
             </p>
           </div>
 
@@ -152,10 +155,22 @@ export default function Terms() {
           <div>
             <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">4. Fees & Payment Terms</h2>
             <p className="leading-relaxed mb-3">
-              <strong>Nanny Application Fee:</strong> $75 (non-refundable). This fee covers your application review, interview process, and entry into our nanny network.
+              <strong>An Investment in Your Home:</strong> We understand that inviting someone into your home is one of the most important decisions you'll make.
+              Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.
             </p>
             <p className="leading-relaxed mb-3">
-              <strong>Family Application Fee:</strong> $250 (annual fee, non-refundable). This fee covers your application review and matching process.
+              <strong>Sitter: Application Fee - $45 (Non-refundable):</strong> This fee covers your application review, interview process, background check, and entry into our sitter network.
+              Once approved you will download the Club Nanny app ($12/month) to have access to families looking to match with a sitter.
+            </p>
+            <p className="leading-relaxed mb-3">
+              <strong>Family:</strong> You will download the Club Nanny app ($20/month) and gain access to our carefully vetted, faith-aligned sitter network.
+              Babysitter wages are paid directly by families.
+            </p>
+            <p className="leading-relaxed mb-3">
+              <strong>Nanny Application Fee - $75 (Non-refundable):</strong> This fee covers your application review, interview process, background check, and entry into our nanny network.
+            </p>
+            <p className="leading-relaxed mb-3">
+              <strong>Family Application Fee - $250 (Annual fee, non-refundable):</strong> With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
             </p>
             <p className="leading-relaxed">
               Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.
@@ -262,7 +277,7 @@ export default function Terms() {
 
           <div className="pt-6 border-t border-[#E8E5DF]">
             <p className="text-sm text-[#4A4A4A]/60">
-              Last updated: April 23, 2026
+              Last updated: June 23, 2026
             </p>
           </div>
         </div>

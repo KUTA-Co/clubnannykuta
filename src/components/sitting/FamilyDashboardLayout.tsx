@@ -26,7 +26,7 @@ const mobileNavItems = [
   { path: "/sitting/family/requests", label: "Requests", icon: List },
   { path: "/sitting/family/request", label: "Post", icon: PlusCircle, isCenter: true },
   { path: "/sitting/family/bookings", label: "Bookings", icon: Clock },
-  { path: "/sitting/family/profile", label: "Profile", icon: Home },
+  { path: "/sitting/family/profile", label: "Profile", icon: User },
 ];
 
 export function FamilyDashboardLayout() {
@@ -43,7 +43,7 @@ export function FamilyDashboardLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login', { replace: true });
+    navigate('/sitting/login', { replace: true });
   };
 
   return (
@@ -117,7 +117,7 @@ export function FamilyDashboardLayout() {
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
             </Link>
 
-            {/* Bell + profile */}
+            {/* Bell + sign out */}
             <div className="flex items-center gap-1.5">
               <NotificationBell />
               <button
@@ -129,12 +129,6 @@ export function FamilyDashboardLayout() {
               >
                 Sign Out
               </button>
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: '#C77DA3' }}
-              >
-                <User className="w-4 h-4" aria-hidden="true" />
-              </div>
             </div>
           </div>
         </header>

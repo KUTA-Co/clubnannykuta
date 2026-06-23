@@ -39,7 +39,7 @@ export function SitterDashboardLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login', { replace: true });
+    navigate('/sitting/login', { replace: true });
   };
 
   return (
@@ -113,7 +113,7 @@ export function SitterDashboardLayout() {
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
             </Link>
 
-            {/* Bell + profile */}
+            {/* Bell + sign out */}
             <div className="flex items-center gap-1.5">
               <NotificationBell />
               <button
@@ -125,12 +125,6 @@ export function SitterDashboardLayout() {
               >
                 Sign Out
               </button>
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: '#E8A0BF' }}
-              >
-                <User className="w-4 h-4" aria-hidden="true" />
-              </div>
             </div>
           </div>
         </header>
