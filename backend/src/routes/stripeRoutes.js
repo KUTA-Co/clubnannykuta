@@ -149,6 +149,11 @@ router.post('/webhook', async (req, res) => {
     case 'checkout.session.completed': {
       const session = event.data.object;
 
+      if (!stripeService.isManagedSession(session)) {
+        console.log(`Ignoring checkout.session.completed for another Stripe integration: ${session.id}`);
+        break;
+      }
+
       try {
         await handlePaymentSuccess(session);
         console.log('Payment processed successfully for session:', session.id);
@@ -161,6 +166,10 @@ router.post('/webhook', async (req, res) => {
 
     case 'checkout.session.expired': {
       const session = event.data.object;
+      if (!stripeService.isManagedSession(session)) {
+        console.log(`Ignoring checkout.session.expired for another Stripe integration: ${session.id}`);
+        break;
+      }
       await handlePaymentExpired(session);
       break;
     }

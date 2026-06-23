@@ -31,6 +31,7 @@ const SITTING_FEES = {
 // Platform's cut of a booking charge, as a percent (Stage 1: 0% — full amount passes to the sitter,
 // paid out manually off-platform). Bump this when Stripe Connect payouts are added in Stage 2.
 const BOOKING_PLATFORM_FEE_PERCENT = 0;
+const STRIPE_APP_CONTEXT = process.env.STRIPE_APP_CONTEXT || 'club_nanny';
 
 class StripeService {
   constructor() {
@@ -43,6 +44,17 @@ class StripeService {
     }
 
     return this.stripe;
+  }
+
+  withAppContext(metadata = {}) {
+    return {
+      ...metadata,
+      clubNannyDeployment: STRIPE_APP_CONTEXT
+    };
+  }
+
+  isManagedSession(session) {
+    return session?.metadata?.clubNannyDeployment === STRIPE_APP_CONTEXT;
   }
 
   /**
@@ -98,7 +110,7 @@ class StripeService {
       ],
       mode: 'payment',
       customer_email: email,
-      metadata,
+      metadata: this.withAppContext(metadata),
       success_url: `${process.env.FRONTEND_URL}/application-submitted?type=${type}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/apply-${type}?payment=cancelled`,
     });
@@ -148,13 +160,13 @@ class StripeService {
       ],
       mode: 'payment',
       customer_email: email,
-      metadata: {
+      metadata: this.withAppContext({
         paymentType: `placement_${feeType}`,
         applicationType: 'family',
         applicationId: applicationId.toString(),
         applicantName: name,
         applicantEmail: email
-      },
+      }),
       success_url: `${process.env.FRONTEND_URL}/admin/families/${applicationId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/admin/families/${applicationId}?payment=cancelled`,
     });
@@ -278,11 +290,11 @@ class StripeService {
       line_items: lineItems,
       mode: 'payment',
       customer_email: email,
-      metadata: {
+      metadata: this.withAppContext({
         registrationType: type,
         applicantName: name,
         applicantEmail: email
-      },
+      }),
       success_url: `${process.env.FRONTEND_URL}/sitting/registration-complete?type=${type}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/sitting/register/${type === 'sitter' ? 'sitter' : 'family'}?payment=cancelled`
     });
@@ -336,11 +348,11 @@ class StripeService {
       ],
       mode: 'payment',
       customer_email: email,
-      metadata: {
+      metadata: this.withAppContext({
         paymentType: 'booking_payment',
         bookingId: bookingId.toString(),
         familyName: name || ''
-      },
+      }),
       success_url: `${process.env.FRONTEND_URL}/sitting/family/bookings?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/sitting/family/bookings?payment=cancelled`
     });
@@ -352,4 +364,4 @@ class StripeService {
 const stripeService = new StripeService();
 
 export default stripeService;
-export { APPLICATION_FEES, PLACEMENT_FEES, SITTING_FEES, BOOKING_PLATFORM_FEE_PERCENT };
+export { APPLICATION_FEES, PLACEMENT_FEES, SITTING_FEES, BOOKING_PLATFORM_FEE_PERCENT, STRIPE_APP_CONTEXT };
