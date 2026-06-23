@@ -263,6 +263,15 @@ export default function SitterRegistration() {
 
       <main className={`flex-1 ${runningAsApp ? 'pt-6' : 'pt-24'} pb-16 px-4`}>
         <div className="max-w-2xl mx-auto">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate('/sitting/login')}
+            className="mb-4 -ml-2 text-[#4A4A4A]/70 hover:text-[#4A4A4A] hover:bg-[#F5D5E5]/40"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Sign In
+          </Button>
+
           {/* Header */}
           <div className="text-center mb-8">
             <p className="text-sm font-medium tracking-wide text-[#4A4A4A]/60 mb-2">SITTER PROGRAM</p>
