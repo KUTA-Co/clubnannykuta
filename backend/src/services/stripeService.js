@@ -237,9 +237,9 @@ class StripeService {
     let productName, description;
 
     if (type === 'sitter') {
-      // Sitter: $45 application fee + first month $12 membership
-      productName = 'Club Nanny Sitter Registration';
-      description = 'Application fee ($45) plus first month membership ($12)';
+      // Sitter: $45 application fee only. The $12/month app membership starts after approval.
+      productName = 'Club Nanny Sitter Application';
+      description = 'Non-refundable sitter application fee ($45)';
       lineItems = [
         {
           price_data: {
@@ -249,17 +249,6 @@ class StripeService {
               description: 'One-time non-refundable application fee'
             },
             unit_amount: SITTING_FEES.sitter_application
-          },
-          quantity: 1
-        },
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Club Nanny Monthly Membership',
-              description: 'First month membership fee'
-            },
-            unit_amount: SITTING_FEES.sitter_membership
           },
           quantity: 1
         }

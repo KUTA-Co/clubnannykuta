@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { DownloadAppButton } from "@/components/DownloadAppButton";
 import { isStandaloneApp } from "@/lib/pwa";
+import { saveRegistrationData } from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -67,6 +68,7 @@ export default function SitterRegistration() {
   const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const runningAsApp = isStandaloneApp();
 
   const form = useForm<FormData>({
@@ -174,7 +176,17 @@ export default function SitterRegistration() {
       // Production: pay-first — store the form data, create a Stripe checkout, redirect.
       // After payment, RegistrationComplete finalizes the account (pending admin approval).
       if (import.meta.env.PROD) {
-        sessionStorage.setItem('sitterRegistrationData', JSON.stringify(payload));
+        const dataSaved = saveRegistrationData('sitterRegistrationData', payload);
+        if (!dataSaved) {
+          toast({
+            title: "Registration Error",
+            description: "Your browser blocked local storage. Please allow site storage and try again.",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/api/sitting/auth/register/sitter`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -182,7 +194,9 @@ export default function SitterRegistration() {
         });
         const result = await response.json();
         if (result.success && result.checkoutUrl) {
-          window.location.href = result.checkoutUrl;
+          setCheckoutUrl(result.checkoutUrl);
+          window.location.assign(result.checkoutUrl);
+          window.setTimeout(() => setIsSubmitting(false), 1500);
           return;
         }
         toast({ title: "Registration Error", description: result.message || "Could not start checkout", variant: "destructive" });
@@ -224,6 +238,16 @@ export default function SitterRegistration() {
       setIsSubmitting(false);
     }
   };
+
+  const handleInvalidSubmit = () => {
+    toast({
+      title: "Check the form",
+      description: "Please complete the highlighted fields before continuing to payment.",
+      variant: "destructive"
+    });
+  };
+
+  const submitApplication = handleSubmit(onSubmit, handleInvalidSubmit);
 
   const steps = [
     { number: 1, label: "Account" },
@@ -278,7 +302,7 @@ export default function SitterRegistration() {
 
           {/* Form Card */}
           <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={submitApplication}>
               {/* Step 1: Account */}
               {step === 1 && (
                 <div className="space-y-4">
@@ -600,8 +624,9 @@ export default function SitterRegistration() {
                       <ArrowLeft className="w-4 h-4 mr-2" /> Back
                     </Button>
                     <Button
-                      type="submit"
-                      disabled={isSubmitting || !watch("backgroundCheckConsent") || !watch("membershipConsent")}
+                      type="button"
+                      onClick={() => submitApplication()}
+                      disabled={isSubmitting}
                       style={{ backgroundColor: '#E8A0BF' }}
                       className="text-white hover:opacity-90 disabled:opacity-50"
                     >
@@ -616,6 +641,17 @@ export default function SitterRegistration() {
                       )}
                     </Button>
                   </div>
+                  {checkoutUrl && (
+                    <div className="pt-3 text-center">
+                      <a
+                        href={checkoutUrl}
+                        className="text-sm font-medium underline"
+                        style={{ color: '#E8A0BF' }}
+                      >
+                        Continue to payment
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </form>

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { SitterProfile, SittingFamilyProfile, SitterAvailability, BookingRequest, SitterResponse, Review, FamilyReview } from '../models/index.js';
+import { SitterProfile, SittingFamilyProfile, BookingRequest, SitterResponse, Review, FamilyReview } from '../models/index.js';
 
 // Escape a string for safe use inside a RegExp (city names like "St. Louis" contain regex chars)
 function escapeRegex(str) {
@@ -78,65 +78,16 @@ class MatchingService {
    * @returns {boolean} Whether the sitter is available
    */
   async checkSitterAvailability(sitterId, date, startTime, endTime) {
-    // Check for confirmed bookings that overlap
+    // Only confirmed bookings should block a sitter from responding. The sitter
+    // availability editor is no longer exposed in the app, so enforcing hidden
+    // weekly defaults would create false "scheduling conflict" messages.
     const hasConflictingBooking = await this.hasOverlappingBooking(
       sitterId,
       date,
       startTime,
       endTime
     );
-
-    if (hasConflictingBooking) {
-      return false;
-    }
-
-    // Check sitter's availability settings
-    const availability = await SitterAvailability.findOne({ sitterId });
-
-    if (!availability) {
-      // No availability settings = available by default
-      return true;
-    }
-
-    // Check blocked slots for this specific date
-    const dateObj = new Date(date);
-    const dateStart = new Date(dateObj.setHours(0, 0, 0, 0));
-    const dateEnd = new Date(dateObj.setHours(23, 59, 59, 999));
-
-    const blockedSlot = availability.blockedSlots.find(slot => {
-      const slotDate = new Date(slot.date);
-      if (slotDate < dateStart || slotDate > dateEnd) {
-        return false;
-      }
-
-      if (slot.isAllDay) {
-        return true;
-      }
-
-      // Check time overlap
-      return this.timesOverlap(startTime, endTime, slot.startTime, slot.endTime);
-    });
-
-    if (blockedSlot) {
-      return false;
-    }
-
-    // Check weekly availability
-    const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    const dayAvailability = availability.weeklyAvailability[dayOfWeek];
-
-    if (dayAvailability && !dayAvailability.available) {
-      return false;
-    }
-
-    // Check if requested time is within their weekly hours
-    if (dayAvailability && dayAvailability.start && dayAvailability.end) {
-      if (startTime < dayAvailability.start || endTime > dayAvailability.end) {
-        return false;
-      }
-    }
-
-    return true;
+    return !hasConflictingBooking;
   }
 
   /**

@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Loader2, Clock } from "lucide-react";
 import { GlassButton } from "@/components/ui/effects";
 import { useAuth } from "@/contexts/AuthContext";
+import { clearRegistrationData, getRegistrationData } from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -35,7 +36,7 @@ export default function RegistrationComplete() {
     try {
       // Get stored form data
       const storageKey = type === 'sitter' ? 'sitterRegistrationData' : 'familyRegistrationData';
-      const storedData = sessionStorage.getItem(storageKey);
+      const storedData = getRegistrationData(storageKey);
 
       if (!storedData) {
         setStatus('error');
@@ -63,7 +64,7 @@ export default function RegistrationComplete() {
 
       if (result.success) {
         // Clear stored data
-        sessionStorage.removeItem(storageKey);
+        clearRegistrationData(storageKey);
 
         // Log the user in
         if (result.token) {

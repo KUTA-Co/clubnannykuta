@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { DownloadAppButton } from "@/components/DownloadAppButton";
 import { isStandaloneApp } from "@/lib/pwa";
+import { saveRegistrationData } from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -148,7 +149,17 @@ export default function FamilyRegistration() {
 
       // Production: pay-first — store the form data, create a Stripe checkout, redirect.
       if (import.meta.env.PROD) {
-        sessionStorage.setItem('familyRegistrationData', JSON.stringify(payload));
+        const dataSaved = saveRegistrationData('familyRegistrationData', payload);
+        if (!dataSaved) {
+          toast({
+            title: "Registration Error",
+            description: "Your browser blocked local storage. Please allow site storage and try again.",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/api/sitting/auth/register/family`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -156,7 +167,7 @@ export default function FamilyRegistration() {
         });
         const result = await response.json();
         if (result.success && result.checkoutUrl) {
-          window.location.href = result.checkoutUrl;
+          window.location.assign(result.checkoutUrl);
           return;
         }
         toast({ title: "Registration Error", description: result.message || "Could not start checkout", variant: "destructive" });
