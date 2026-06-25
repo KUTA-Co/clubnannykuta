@@ -24,6 +24,7 @@ const DOMAIN = process.env.MAILGUN_DOMAIN || 'noreply.clubnanny.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Club Nanny <noreply@noreply.clubnanny.com>';
 const APP_URL = (process.env.FRONTEND_URL || 'https://clubnanny.com').replace(/\/+$/, '');
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'Leigh@clubnanny.com';
+const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || SUPPORT_EMAIL;
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'Leigh@clubnanny.com')
   .split(',')
   .map(email => email.trim())
@@ -793,6 +794,7 @@ class EmailService {
     this.mg = mg;
     this.domain = DOMAIN;
     this.from = FROM_EMAIL;
+    this.replyTo = REPLY_TO_EMAIL;
     this.adminEmails = ADMIN_EMAILS;
   }
 
@@ -805,6 +807,7 @@ class EmailService {
       const result = await this.mg.messages.create(this.domain, {
         from: this.from,
         to: Array.isArray(to) ? to : [to],
+        'h:Reply-To': this.replyTo,
         subject,
         html
       });
@@ -1354,6 +1357,7 @@ class EmailService {
       const result = await this.mg.messages.create(this.domain, {
         from: this.from,
         to: applicantEmail,
+        'h:Reply-To': this.replyTo,
         subject: `Invoice ${invoiceNumber} - Club Nanny ${feeLabel} Fee`,
         html,
         attachment: pdfBuffer ? [{
