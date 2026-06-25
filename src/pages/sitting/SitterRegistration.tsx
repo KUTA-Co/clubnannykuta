@@ -15,9 +15,27 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isStandaloneApp } from "@/lib/pwa";
-import { saveRegistrationData } from "@/lib/registrationStorage";
+import { getRegistrationData, saveRegistrationData } from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+
+const isAtLeast16 = (value: string) => {
+  const dob = new Date(value);
+  if (Number.isNaN(dob.getTime())) return false;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= 16;
+};
+
+const maxSitterBirthDate = (() => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 16);
+  return date.toISOString().split('T')[0];
+})();
 
 // Combined schema for all fields
 const formSchema = z.object({
@@ -32,7 +50,9 @@ const formSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   postalCode: z.string().min(5, "Please enter a valid ZIP code"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  dateOfBirth: z.string()
+    .min(1, "Date of birth is required")
+    .refine(isAtLeast16, "Sitters must be at least 16 years old"),
   howDidYouHear: z.string().min(1, "Please tell us how you heard about us"),
 
   // Experience
@@ -61,6 +81,68 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const emptyDefaults: FormData = {
+  email: "",
+  password: "",
+  confirmPassword: "",
+  fullName: "",
+  phone: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  dateOfBirth: "",
+  howDidYouHear: "",
+  yearsOfExperience: "",
+  ageGroupsWorkedWith: "",
+  typesOfExperience: "",
+  experienceDescription: "",
+  faithJourney: "",
+  whyCalledToServe: "",
+  specialSkills: "",
+  hourlyRate1Kid: undefined as unknown as number,
+  hourlyRate2Kids: undefined as unknown as number,
+  hourlyRate3PlusKids: undefined as unknown as number,
+  backgroundCheckConsent: false,
+  membershipConsent: false,
+};
+
+function getSavedDefaults(): FormData {
+  const saved = getRegistrationData('sitterRegistrationData');
+  if (!saved) return emptyDefaults;
+
+  try {
+    const data = JSON.parse(saved);
+    return {
+      ...emptyDefaults,
+      email: data.email || "",
+      password: data.password || "",
+      confirmPassword: data.password || "",
+      fullName: [data.firstName, data.lastName].filter(Boolean).join(" ") || "",
+      phone: data.phone || "",
+      city: data.city || "",
+      state: data.state || "",
+      postalCode: data.postalCode || "",
+      dateOfBirth: data.dateOfBirth || "",
+      howDidYouHear: data.howDidYouHear || "",
+      yearsOfExperience: data.yearsOfExperience || "",
+      ageGroupsWorkedWith: data.ageGroupsWorkedWith || "",
+      typesOfExperience: data.typesOfExperience || "",
+      experienceDescription: data.experience || data.bio || "",
+      faithJourney: data.faithJourney || "",
+      whyCalledToServe: data.whyCalledToServe || "",
+      specialSkills: data.specialSkills || "",
+      hourlyRate1Kid: data.hourlyRate1Kid ?? data.hourlyRate ?? emptyDefaults.hourlyRate1Kid,
+      hourlyRate2Kids: data.hourlyRate2Kids ?? emptyDefaults.hourlyRate2Kids,
+      hourlyRate3PlusKids: data.hourlyRate3PlusKids ?? emptyDefaults.hourlyRate3PlusKids,
+      backgroundCheckConsent: true,
+      membershipConsent: true,
+    };
+  } catch (error) {
+    console.warn('Could not restore saved sitter registration data', error);
+    return emptyDefaults;
+  }
+}
+
 export default function SitterRegistration() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,30 +154,7 @@ export default function SitterRegistration() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      fullName: "",
-      phone: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      dateOfBirth: "",
-      howDidYouHear: "",
-      yearsOfExperience: "",
-      ageGroupsWorkedWith: "",
-      typesOfExperience: "",
-      experienceDescription: "",
-      faithJourney: "",
-      whyCalledToServe: "",
-      specialSkills: "",
-      hourlyRate1Kid: undefined,
-      hourlyRate2Kids: undefined,
-      hourlyRate3PlusKids: undefined,
-      backgroundCheckConsent: false,
-      membershipConsent: false,
-    },
+    defaultValues: getSavedDefaults(),
     mode: "onChange"
   });
 
@@ -416,6 +475,7 @@ export default function SitterRegistration() {
                     <Label>Date of Birth *</Label>
                     <Input
                       type="date"
+                      max={maxSitterBirthDate}
                       {...register("dateOfBirth")}
                       className="mt-1"
                     />

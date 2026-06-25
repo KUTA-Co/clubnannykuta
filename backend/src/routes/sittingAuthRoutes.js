@@ -6,6 +6,30 @@ import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
+function calculateValidSitterAge({ age, dateOfBirth }) {
+  let computedAge = Number(age);
+
+  if (dateOfBirth) {
+    const dob = new Date(dateOfBirth);
+    if (!Number.isNaN(dob.getTime())) {
+      const today = new Date();
+      computedAge = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        computedAge--;
+      }
+    }
+  }
+
+  // Age is optional on the model. If a browser submits an impossible DOB,
+  // keep the paid application moving to admin review instead of failing after Stripe.
+  if (!Number.isFinite(computedAge) || computedAge < 16 || computedAge > 100) {
+    return undefined;
+  }
+
+  return computedAge;
+}
+
 // ============================================
 // SITTER REGISTRATION
 // ============================================
@@ -46,6 +70,14 @@ router.post('/register/sitter', async (req, res) => {
           message: 'A sitter account with this email already exists'
         });
       }
+
+      // Users are only created after Stripe redirects back with a paid session.
+      // If a user exists but the profile does not, the paid completion step failed.
+      // Do not create another checkout and charge the applicant again.
+      return res.status(409).json({
+        success: false,
+        message: 'A paid sitter registration is already in progress for this email. Please use the payment success page to finalize it, or contact Club Nanny so we can complete it without another payment.'
+      });
     }
 
     const name = `${firstName} ${lastName}`;
@@ -129,17 +161,7 @@ router.post('/complete/sitter', async (req, res) => {
     const membershipFeeAmountCents = Number(session.metadata?.sitterMembershipFeeCents || 0);
     const membershipFeeChargedAt = membershipFeeAmountCents > 0 ? new Date() : undefined;
 
-    // Derive age from date of birth when provided
-    let computedAge = age || 18;
-    if (dateOfBirth) {
-      const dob = new Date(dateOfBirth);
-      const today = new Date();
-      computedAge = today.getFullYear() - dob.getFullYear();
-      const monthDiff = today.getMonth() - dob.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        computedAge--;
-      }
-    }
+    const computedAge = calculateValidSitterAge({ age, dateOfBirth });
 
     // Check if user already exists
     let user = await User.findOne({ email: email.toLowerCase() });
@@ -198,7 +220,7 @@ router.post('/complete/sitter', async (req, res) => {
       state,
       postalCode: postalCode || '',
       dateOfBirth: dateOfBirth || null,
-      age: computedAge,
+      ...(computedAge !== undefined ? { age: computedAge } : {}),
       howDidYouHear: howDidYouHear || '',
       yearsOfExperience: yearsOfExperience || '',
       ageGroupsWorkedWith: ageGroupsWorkedWith || '',
@@ -293,6 +315,14 @@ router.post('/register/family', async (req, res) => {
           message: 'A Club Nanny family account with this email already exists'
         });
       }
+
+      // Users are only created after Stripe redirects back with a paid session.
+      // If a user exists but the profile does not, the paid completion step failed.
+      // Do not create another checkout and charge the family again.
+      return res.status(409).json({
+        success: false,
+        message: 'A paid family registration is already in progress for this email. Please use the payment success page to finalize it, or contact Club Nanny so we can complete it without another payment.'
+      });
     }
 
     // Create Stripe checkout session
@@ -510,17 +540,7 @@ router.post('/register-test/sitter', async (req, res) => {
       }
     }
 
-    // Calculate age from date of birth
-    let age = 18;
-    if (dateOfBirth) {
-      const dob = new Date(dateOfBirth);
-      const today = new Date();
-      age = today.getFullYear() - dob.getFullYear();
-      const monthDiff = today.getMonth() - dob.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--;
-      }
-    }
+    const computedAge = calculateValidSitterAge({ dateOfBirth });
 
     // Create or get user
     let user = existingUser;
@@ -553,7 +573,7 @@ router.post('/register-test/sitter', async (req, res) => {
       state,
       postalCode: postalCode || '',
       dateOfBirth: dateOfBirth || null,
-      age,
+      ...(computedAge !== undefined ? { age: computedAge } : {}),
       howDidYouHear: howDidYouHear || '',
       yearsOfExperience: yearsOfExperience || '',
       ageGroupsWorkedWith: ageGroupsWorkedWith || '',

@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Loader2, Clock } from "lucide-react";
 import { GlassButton } from "@/components/ui/effects";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { DownloadAppButton } from "@/components/DownloadAppButton";
 import { clearRegistrationData, getRegistrationData } from "@/lib/registrationStorage";
@@ -34,6 +35,9 @@ export default function RegistrationComplete() {
   }, [sessionId, type, paymentStatus]);
 
   const completeRegistration = async () => {
+    setStatus('loading');
+    setErrorMessage('');
+
     try {
       // Get stored form data
       const storageKey = type === 'sitter' ? 'sitterRegistrationData' : 'familyRegistrationData';
@@ -109,13 +113,26 @@ export default function RegistrationComplete() {
                 Registration Error
               </h1>
               <p className="text-[#4A4A4A]/60 mb-6">{errorMessage}</p>
-              <GlassButton
-                to={type === 'sitter' ? '/sitting/register/sitter' : '/sitting/register/family'}
-                variant="sage"
-                size="lg"
-              >
-                Try Again
-              </GlassButton>
+              <div className="space-y-3">
+                {paymentStatus === 'success' && sessionId && type && (
+                  <Button
+                    type="button"
+                    onClick={completeRegistration}
+                    className="w-full h-12 rounded-xl text-white"
+                    style={{ backgroundColor: type === 'sitter' ? '#E8A0BF' : '#C77DA3' }}
+                  >
+                    Retry Finalizing Registration
+                  </Button>
+                )}
+                <GlassButton
+                  to={type === 'sitter' ? '/sitting/register/sitter' : '/sitting/register/family'}
+                  variant="sage"
+                  size="lg"
+                  className="w-full justify-center"
+                >
+                  Back to Application
+                </GlassButton>
+              </div>
             </div>
           )}
 
