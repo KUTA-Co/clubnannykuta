@@ -493,7 +493,7 @@ export default function FamilyRegistration() {
                   {/* Download App Button */}
                   <div className="mt-6 p-4 bg-gray-50 rounded-xl text-center">
                     <p className="text-sm text-[#4A4A4A]/70 mb-3">Download the Club Nanny app to complete your profile</p>
-                    <DownloadAppButton className="border-[#C77DA3] text-[#C77DA3] hover:bg-[#C77DA3] hover:text-white" />
+                    <DownloadAppButton className="border-[#C77DA3] bg-[#C77DA3] text-white hover:bg-white hover:text-[#C77DA3]" />
                   </div>
 
                   <div className="flex justify-between pt-4">

@@ -636,7 +636,7 @@ export default function SitterRegistration() {
                   {/* Download App Button */}
                   <div className="mt-6 p-4 bg-gray-50 rounded-xl text-center">
                     <p className="text-sm text-[#4A4A4A]/70 mb-3">Download the Club Nanny app, then submit your application to complete your profile.</p>
-                    <DownloadAppButton className="border-[#E8A0BF] text-[#E8A0BF] hover:bg-[#E8A0BF] hover:text-white" />
+                    <DownloadAppButton className="border-[#E8A0BF] bg-[#E8A0BF] text-white hover:bg-white hover:text-[#E8A0BF]" />
                   </div>
 
                   <div className="flex justify-between pt-4">
