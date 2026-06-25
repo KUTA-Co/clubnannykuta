@@ -32,6 +32,7 @@ export default function FamilyApplication() {
     phone: "",
     city: "",
     state: "",
+    howDidYouHear: "",
     numberOfChildren: "",
     childrenAges: "",
     startDate: "",
@@ -78,6 +79,7 @@ export default function FamilyApplication() {
         phone: formData.phone,
         city: formData.city,
         state: formData.state,
+        howDidYouHear: formData.howDidYouHear,
         numberOfChildren: formData.numberOfChildren,
         childrenAges: formData.childrenAges,
         startDate: formData.startDate,
@@ -269,6 +271,16 @@ export default function FamilyApplication() {
                       className="h-12 rounded-xl border-gray-200 focus:border-[#8BA99E] focus:ring-[#8BA99E]"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-[#4A4A4A]">How did you hear about us? *</Label>
+                  <Input
+                    placeholder="Instagram, Facebook, TikTok, from a friend, etc."
+                    value={formData.howDidYouHear}
+                    onChange={(e) => handleChange("howDidYouHear", e.target.value)}
+                    className="h-12 rounded-xl border-gray-200 focus:border-[#8BA99E] focus:ring-[#8BA99E]"
+                  />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -566,13 +578,19 @@ export default function FamilyApplication() {
                 Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.
               </p>
               <p className="leading-relaxed mb-3">
-                <strong>Nanny Application Fee:</strong> $75 (non-refundable). This fee covers application review, interview process, background check, and entry into our nanny network.
+                <strong>Families seeking sitter services:</strong> Families download the Club Nanny app and pay $20/month to access our carefully vetted, faith-aligned sitter network. Babysitter wages are paid directly by families.
               </p>
               <p className="leading-relaxed mb-3">
-                <strong>Family Application Fee:</strong> $250 (annual fee, non-refundable). With your application, you receive a detailed family consultation; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
+                <strong>Sitters:</strong> Application Fee - $45 (non-refundable). Sitters also pay a $12 first month subscription fee at application submission; this $12 is refunded if rejected and serves as the first monthly subscription fee if approved.
+              </p>
+              <p className="leading-relaxed mb-3">
+                <strong>Families seeking nanny services:</strong> Family Application Fee - $250 (annual fee, non-refundable). With your application, you receive a detailed family consultation; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
+              </p>
+              <p className="leading-relaxed mb-3">
+                <strong>Nannies:</strong> Nanny Application Fee - $75 (non-refundable). This fee covers application review, interview process, background check, and entry into our nanny network.
               </p>
               <p className="leading-relaxed">
-                Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.
+                Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable except the sitter first month subscription fee when a sitter application is rejected.
               </p>
             </div>
             <div>

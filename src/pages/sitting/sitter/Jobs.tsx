@@ -35,6 +35,7 @@ export default function SitterJobs() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [isPendingVerification, setIsPendingVerification] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +44,22 @@ export default function SitterJobs() {
 
   const fetchJobs = async () => {
     try {
+      const profileResponse = await fetch(`${API_URL}/api/sitter/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const profileData = await profileResponse.json();
+      const profile = profileData.profile;
+      const pending = Boolean(
+        profileData.success &&
+        (profile?.status !== 'active' || profile?.membershipStatus !== 'active')
+      );
+
+      setIsPendingVerification(pending);
+      if (pending) {
+        setJobs([]);
+        return;
+      }
+
       const response = await fetch(`${API_URL}/api/sitter/jobs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -50,6 +67,9 @@ export default function SitterJobs() {
 
       if (data.success) {
         setJobs(data.jobs || []);
+      } else if (response.status === 403) {
+        setIsPendingVerification(true);
+        setJobs([]);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -159,9 +179,13 @@ export default function SitterJobs() {
             >
               <MapPin className="w-8 h-8" style={{ color: '#E8A0BF' }} />
             </div>
-            <h2 className="text-lg font-medium text-[#4A4A4A] mb-2">No Jobs Available</h2>
+            <h2 className="text-lg font-medium text-[#4A4A4A] mb-2">
+              {isPendingVerification ? "Verification Pending" : "No Jobs Available"}
+            </h2>
             <p className="text-[#4A4A4A]/60">
-              There are no open babysitting jobs right now. Check back soon!
+              {isPendingVerification
+                ? "Available jobs will be visible once you have been verified."
+                : "There are no open babysitting jobs right now. Check back soon!"}
             </p>
           </CardContent>
         </Card>

@@ -26,6 +26,10 @@ const nannyApplicationSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  howDidYouHear: {
+    type: String,
+    trim: true
+  },
   dateOfBirth: {
     type: String,
     trim: true
@@ -165,6 +169,15 @@ const nannyApplicationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+
+  // Legacy import tracking
+  legacySourceId: {
+    type: String,
+    trim: true
+  },
+  legacyImportedAt: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -177,6 +190,7 @@ nannyApplicationSchema.index({ paymentStatus: 1 });
 nannyApplicationSchema.index({ createdAt: -1 });
 nannyApplicationSchema.index({ backgroundCheckStatus: 1 });
 nannyApplicationSchema.index({ matchedFamilyId: 1 });
+nannyApplicationSchema.index({ legacySourceId: 1 }, { sparse: true });
 
 const NannyApplication = mongoose.model('NannyApplication', nannyApplicationSchema);
 

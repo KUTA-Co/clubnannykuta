@@ -7,13 +7,15 @@ import {
   CreditCard,
   MessageSquare,
   Baby,
+  Home,
   LogOut
 } from "lucide-react";
 
 const navItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { path: "/admin/families", label: "Family Applications", icon: Users },
+  { path: "/admin/families", label: "Nanny Families", icon: Users },
   { path: "/admin/nannies", label: "Nanny Applications", icon: Heart },
+  { path: "/admin/sitting-families", label: "Sitter Families", icon: Home },
   { path: "/admin/sitters", label: "Sitters", icon: Baby },
   { path: "/admin/payments", label: "Payments", icon: CreditCard },
   { path: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },

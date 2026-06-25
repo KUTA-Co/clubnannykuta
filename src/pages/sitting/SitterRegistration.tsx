@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { DownloadAppButton } from "@/components/DownloadAppButton";
 import { isStandaloneApp } from "@/lib/pwa";
 import { saveRegistrationData } from "@/lib/registrationStorage";
 
@@ -631,12 +630,6 @@ export default function SitterRegistration() {
                       </label>
                     </div>
                     {errors.membershipConsent && <p className="text-red-500 text-sm">{errors.membershipConsent.message}</p>}
-                  </div>
-
-                  {/* Download App Button */}
-                  <div className="mt-6 p-4 bg-gray-50 rounded-xl text-center">
-                    <p className="text-sm text-[#4A4A4A]/70 mb-3">Download the Club Nanny app, then submit your application to complete your profile.</p>
-                    <DownloadAppButton className="border-[#E8A0BF] bg-[#E8A0BF] text-white hover:bg-white hover:text-[#E8A0BF]" />
                   </div>
 
                   <div className="flex justify-between pt-4">

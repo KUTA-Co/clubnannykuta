@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Loader2, Clock } from "lucide-react";
 import { GlassButton } from "@/components/ui/effects";
 import { useAuth } from "@/contexts/AuthContext";
+import { DownloadAppButton } from "@/components/DownloadAppButton";
 import { clearRegistrationData, getRegistrationData } from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -150,9 +151,12 @@ export default function RegistrationComplete() {
                   </li>
                 </ul>
               </div>
-              <GlassButton to="/" variant="sage" size="lg">
-                Back to Home
-              </GlassButton>
+              <div className="space-y-3">
+                <DownloadAppButton className="w-full justify-center border-[#E8A0BF] bg-[#E8A0BF] text-white hover:bg-white hover:text-[#E8A0BF]" />
+                <GlassButton to="/program" variant="sage" size="lg" className="w-full justify-center">
+                  Back to Home
+                </GlassButton>
+              </div>
             </div>
           )}
 

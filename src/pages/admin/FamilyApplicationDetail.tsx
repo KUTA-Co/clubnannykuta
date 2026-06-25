@@ -42,6 +42,7 @@ interface FamilyApplication {
   phone?: string;
   city?: string;
   state?: string;
+  howDidYouHear?: string;
   numberOfChildren?: string;
   childrenAges?: string;
   startDate?: string;
@@ -433,7 +434,7 @@ export default function FamilyApplicationDetail() {
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#8BA99E] transition-colors mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Family Applications
+        Back to Nanny Families
       </Link>
 
       {/* Header Card */}
@@ -564,6 +565,15 @@ export default function FamilyApplicationDetail() {
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Application Date</p>
                   <p className="text-[#1A1A1A]">{formatDate(application.createdAt)}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-pink-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">How They Heard About Us</p>
+                  <p className="text-[#1A1A1A]">{application.howDidYouHear || "Not provided"}</p>
                 </div>
               </div>
             </div>

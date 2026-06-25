@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { User, SitterProfile, SittingFamilyProfile } from '../models/index.js';
 import stripeService from '../services/stripeService.js';
+import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -223,6 +224,9 @@ router.post('/complete/sitter', async (req, res) => {
       membershipFeeAmountCents,
       membershipFeeChargedAt
     });
+
+    emailService.handleSitterApplicationSubmitted(profile.toObject())
+      .catch(err => console.error('Failed to send sitter application notification emails:', err.message));
 
     // Generate JWT token
     const token = jwt.sign(

@@ -65,11 +65,11 @@ export default function Terms() {
 
     addText("4. Fees & Payment Terms", 14, true);
     addText("An Investment in Your Home: We understand that inviting someone into your home is one of the most important decisions you'll make. Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.", 10);
-    addText("Sitter: Application Fee - $45 (Non-refundable): This fee covers your application review, interview process, background check, and entry into our sitter network. Once approved you will download the Club Nanny app ($12/month) to have access to families looking to match with a sitter.", 10);
-    addText("Family: You will download the Club Nanny app ($20/month) and gain access to our carefully vetted, faith-aligned sitter network. Babysitter wages are paid directly by families.", 10);
-    addText("Nanny Application Fee - $75 (Non-refundable): This fee covers your application review, interview process, background check, and entry into our nanny network.", 10);
-    addText("Family Application Fee - $250 (Annual fee, non-refundable): With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.", 10);
-    addText("Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.", 10);
+    addText("Families seeking sitter services: Families download the Club Nanny app and pay $20/month to access our carefully vetted, faith-aligned sitter network. Babysitter wages are paid directly by families.", 10);
+    addText("Sitters: Application Fee - $45 (non-refundable). This fee covers application review, interview process, background check, and entry into our sitter network. Sitters also pay a $12 first month subscription fee at application submission; this $12 is refunded if the sitter is rejected and serves as the first monthly subscription fee if approved.", 10);
+    addText("Families seeking nanny services: Family Application Fee - $250 (annual fee, non-refundable). With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.", 10);
+    addText("Nannies: Nanny Application Fee - $75 (non-refundable). This fee covers application review, interview process, background check, and entry into our nanny network.", 10);
+    addText("Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable except the sitter first month subscription fee when a sitter application is rejected.", 10);
     yPos += 4;
 
     addText("5. Background Checks & Verification", 14, true);
@@ -159,21 +159,21 @@ export default function Terms() {
               Our process is designed to bring clarity, confidence, and peace - so you can focus on what matters most: your family.
             </p>
             <p className="leading-relaxed mb-3">
-              <strong>Sitter: Application Fee - $45 (Non-refundable):</strong> This fee covers your application review, interview process, background check, and entry into our sitter network.
-              Once approved you will download the Club Nanny app ($12/month) to have access to families looking to match with a sitter.
-            </p>
-            <p className="leading-relaxed mb-3">
-              <strong>Family:</strong> You will download the Club Nanny app ($20/month) and gain access to our carefully vetted, faith-aligned sitter network.
+              <strong>Families seeking sitter services:</strong> Families download the Club Nanny app and pay $20/month to access our carefully vetted, faith-aligned sitter network.
               Babysitter wages are paid directly by families.
             </p>
             <p className="leading-relaxed mb-3">
-              <strong>Nanny Application Fee - $75 (Non-refundable):</strong> This fee covers your application review, interview process, background check, and entry into our nanny network.
+              <strong>Sitters: Application Fee - $45 (non-refundable):</strong> This fee covers application review, interview process, background check, and entry into our sitter network.
+              Sitters also pay a $12 first month subscription fee at application submission; this $12 is refunded if the sitter is rejected and serves as the first monthly subscription fee if approved.
             </p>
             <p className="leading-relaxed mb-3">
-              <strong>Family Application Fee - $250 (Annual fee, non-refundable):</strong> With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
+              <strong>Families seeking nanny services: Family Application Fee - $250 (annual fee, non-refundable):</strong> With your application, you receive a detailed family consultation to learn your values, routines, and specific needs; prayerful consideration as we begin your search; and access to our carefully vetted, faith-aligned nanny network.
+            </p>
+            <p className="leading-relaxed mb-3">
+              <strong>Nannies: Nanny Application Fee - $75 (non-refundable):</strong> This fee covers application review, interview process, background check, and entry into our nanny network.
             </p>
             <p className="leading-relaxed">
-              Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable.
+              Nanny wages are paid directly by families and are not included in these fees. All fees are non-refundable except the sitter first month subscription fee when a sitter application is rejected.
             </p>
           </div>
 

@@ -13,6 +13,27 @@ interface TimePickerProps {
   placeholder?: string;
 }
 
+const getDisplayParts = (time: string) => {
+  if (!time) return { hour: "", minute: "", period: "AM" };
+  const [rawHour, rawMinute] = time.split(":");
+  const hour24 = Number(rawHour);
+  if (Number.isNaN(hour24)) return { hour: "", minute: rawMinute || "", period: "AM" };
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+  return {
+    hour: String(hour12).padStart(2, "0"),
+    minute: rawMinute || "",
+    period
+  };
+};
+
+const toTimeValue = (h: string, m: string, p: string) => {
+  const hourNumber = Number(h);
+  if (!h || !m || Number.isNaN(hourNumber)) return "";
+  const hour24 = p === "PM" ? (hourNumber % 12) + 12 : hourNumber % 12;
+  return `${String(hour24).padStart(2, "0")}:${m.padStart(2, "0")}`;
+};
+
 export function TimePicker({
   value,
   defaultValue,
@@ -21,36 +42,48 @@ export function TimePicker({
   placeholder = "Select time"
 }: TimePickerProps) {
   const initialTime = value || defaultValue || "";
-  const [hour, setHour] = React.useState<string>(initialTime ? initialTime.split(":")[0] || "" : "");
-  const [minute, setMinute] = React.useState<string>(initialTime ? initialTime.split(":")[1] || "" : "");
+
+  const initialParts = getDisplayParts(initialTime);
+  const [hour, setHour] = React.useState<string>(initialParts.hour);
+  const [minute, setMinute] = React.useState<string>(initialParts.minute);
+  const [period, setPeriod] = React.useState<string>(initialParts.period);
 
   React.useEffect(() => {
-    if (value) {
-      const [h, m] = value.split(":");
-      setHour(h || "");
-      setMinute(m || "");
-    }
+    const next = getDisplayParts(value || "");
+    setHour(next.hour);
+    setMinute(next.minute);
+    setPeriod(next.period);
   }, [value]);
 
   const handleHourChange = (h: string) => {
     setHour(h);
-    if (h && minute) {
-      onChange?.(`${h.padStart(2, "0")}:${minute.padStart(2, "0")}`);
+    const nextValue = toTimeValue(h, minute, period);
+    if (nextValue) {
+      onChange?.(nextValue);
     }
   };
 
   const handleMinuteChange = (m: string) => {
     setMinute(m);
-    if (hour && m) {
-      onChange?.(`${hour.padStart(2, "0")}:${m.padStart(2, "0")}`);
+    const nextValue = toTimeValue(hour, m, period);
+    if (nextValue) {
+      onChange?.(nextValue);
+    }
+  };
+
+  const handlePeriodChange = (p: string) => {
+    setPeriod(p);
+    const nextValue = toTimeValue(hour, minute, p);
+    if (nextValue) {
+      onChange?.(nextValue);
     }
   };
 
   const displayValue = hour && minute 
-    ? `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`
+    ? `${hour.padStart(2, "0")}:${minute.padStart(2, "0")} ${period}`
     : "";
 
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+  const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, "0"));
   // Show common minute intervals: 00, 15, 30, 45
   const minutes = ["00", "15", "30", "45"];
 
@@ -110,9 +143,27 @@ export function TimePicker({
               </SelectContent>
             </Select>
           </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-[#4A4A4A]/60 font-body uppercase tracking-wide">AM/PM</label>
+            <Select value={period} onValueChange={handlePeriodChange}>
+              <SelectTrigger className="w-24 h-12 font-body bg-white border border-[#E8E5DF] rounded-xl focus:border-[#8BA99E] focus:ring-2 focus:ring-[#8BA99E]/20">
+                <SelectValue placeholder="AM" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-[#E8E5DF] rounded-xl shadow-lg">
+                {["AM", "PM"].map((p) => (
+                  <SelectItem
+                    key={p}
+                    value={p}
+                    className="font-body text-[#4A4A4A] hover:bg-[#F5F2EB] focus:bg-[#8BA99E] focus:text-[#4A4A4A] cursor-pointer rounded-lg mx-1 my-0.5"
+                  >
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
-

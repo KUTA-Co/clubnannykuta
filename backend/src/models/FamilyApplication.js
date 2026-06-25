@@ -26,6 +26,10 @@ const familyApplicationSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  howDidYouHear: {
+    type: String,
+    trim: true
+  },
 
   // Children Info
   numberOfChildren: {
@@ -165,6 +169,15 @@ const familyApplicationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+
+  // Legacy import tracking
+  legacySourceId: {
+    type: String,
+    trim: true
+  },
+  legacyImportedAt: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -176,6 +189,7 @@ familyApplicationSchema.index({ status: 1 });
 familyApplicationSchema.index({ paymentStatus: 1 });
 familyApplicationSchema.index({ createdAt: -1 });
 familyApplicationSchema.index({ matchedNannyId: 1 });
+familyApplicationSchema.index({ legacySourceId: 1 }, { sparse: true });
 
 const FamilyApplication = mongoose.model('FamilyApplication', familyApplicationSchema);
 

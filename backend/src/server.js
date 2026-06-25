@@ -12,6 +12,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import stripeRoutes from './routes/stripeRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import legacyImportRoutes from './routes/legacyImportRoutes.js';
 
 // Club Nanny sitter-side routes
 import sitterRoutes from './routes/sitterRoutes.js';
@@ -183,6 +184,10 @@ app.use('/api/auth', authRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
+
+// Token-protected one-time legacy CSV import route. It is inert unless
+// LEGACY_IMPORT_TOKEN is configured in the deployment environment.
+app.use('/api/legacy-import', legacyImportRoutes);
 
 // Stripe routes (webhook needs raw body, handled inside stripeRoutes)
 app.use('/api/stripe', stripeRoutes);

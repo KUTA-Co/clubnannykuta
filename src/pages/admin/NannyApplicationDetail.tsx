@@ -50,6 +50,7 @@ interface NannyApplication {
   phone?: string;
   city?: string;
   state?: string;
+  howDidYouHear?: string;
   dateOfBirth?: string;
   university?: string;
   yearsExperience?: string;
@@ -733,6 +734,13 @@ export default function NannyApplicationDetail() {
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Applied</p>
                     <p className="mt-1 font-medium text-[#1A1A1A]">{formatDate(application.createdAt)}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MessageCircle className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">How They Heard About Us</p>
+                    <p className="mt-1 font-medium text-[#1A1A1A]">{application.howDidYouHear || "—"}</p>
                   </div>
                 </div>
               </div>

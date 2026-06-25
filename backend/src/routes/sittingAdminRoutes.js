@@ -7,6 +7,7 @@ import {
   SitterResponse
 } from '../models/index.js';
 import stripeService from '../services/stripeService.js';
+import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -159,6 +160,9 @@ router.put('/sitters/:id/approve', async (req, res) => {
     sitter.approvedAt = new Date();
     sitter.approvedBy = req.user.id;
     await sitter.save();
+
+    emailService.sendSitterApprovalEmail(sitter.toObject())
+      .catch(err => console.error('Failed to send sitter approval email:', err.message));
 
     res.json({
       success: true,

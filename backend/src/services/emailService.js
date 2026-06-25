@@ -443,6 +443,12 @@ const familyApplicationAdminTemplate = (data) => {
         <div class="field-label">Location</div>
         <div class="field-value">${data.city}, ${data.state}</div>
       </div>
+      ${(data.howDidYouHear || data.how_did_you_hear) ? `
+      <div class="field">
+        <div class="field-label">How They Heard About Us</div>
+        <div class="field-value">${data.howDidYouHear || data.how_did_you_hear}</div>
+      </div>
+      ` : ''}
       <div class="field">
         <div class="field-label">Number of Children</div>
         <div class="field-value">${data.numberOfChildren || data.number_of_children}</div>
@@ -621,6 +627,12 @@ const nannyApplicationAdminTemplate = (data) => {
         <div class="field-label">Location</div>
         <div class="field-value">${data.city}, ${data.state}</div>
       </div>
+      ${(data.howDidYouHear || data.how_did_you_hear) ? `
+      <div class="field">
+        <div class="field-label">How They Heard About Us</div>
+        <div class="field-value">${data.howDidYouHear || data.how_did_you_hear}</div>
+      </div>
+      ` : ''}
       <div class="field">
         <div class="field-label">Date of Birth</div>
         <div class="field-value">${data.dateOfBirth || data.date_of_birth}</div>
@@ -990,6 +1002,125 @@ class EmailService {
       subject: 'Payment Confirmed - Club Nanny',
       html
     });
+  }
+
+  // ============================================
+  // SITTER APPLICATION NOTIFICATIONS
+  // ============================================
+
+  async sendSitterApplicationSubmittedToAdmin(sitter) {
+    const name = `${sitter.firstName || ''} ${sitter.lastName || ''}`.trim() || sitter.email;
+    const adminUrl = `${APP_URL}/admin/sitters/${sitter._id}`;
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <div style="margin-bottom: 20px;">
+          <span class="badge badge-new">New Sitter Application</span>
+        </div>
+        <h1 class="greeting">New sitter application has been submitted!</h1>
+        <p class="message">
+          A sitter has submitted their application and completed payment. Please review and vet this applicant in the admin dashboard.
+        </p>
+
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">Applicant</span>
+            <span class="info-value">${name}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value"><a href="mailto:${sitter.email}" style="color: #8BA99E;">${sitter.email}</a></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Location</span>
+            <span class="info-value">${[sitter.city, sitter.state].filter(Boolean).join(', ') || 'Not provided'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value" style="color: #ED6C02;">Pending Approval</span>
+          </div>
+        </div>
+
+        <center>
+          <a href="${adminUrl}" class="cta-button">Vet Sitter</a>
+        </center>
+      </div>
+    `);
+
+    return this.send({
+      to: SUPPORT_EMAIL,
+      subject: 'New sitter application has been submitted!',
+      html
+    });
+  }
+
+  async sendSitterApplicationSubmittedToApplicant(sitter) {
+    const name = `${sitter.firstName || ''} ${sitter.lastName || ''}`.trim() || 'there';
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <h1 class="greeting">Application Submitted</h1>
+        <p class="message">
+          Dear ${name},
+        </p>
+        <p class="message">
+          Your application with Club Nanny has been submitted and is currently being processed. We will notify you when your journey with us can start!
+        </p>
+
+        <div class="highlight-box">
+          <h3>What's Next?</h3>
+          <p>Our team will review your application and notify you by email once your account has been approved.</p>
+        </div>
+      </div>
+    `);
+
+    return this.send({
+      to: sitter.email,
+      subject: 'Your Club Nanny Application Has Been Submitted',
+      html
+    });
+  }
+
+  async sendSitterApprovalEmail(sitter) {
+    const name = `${sitter.firstName || ''} ${sitter.lastName || ''}`.trim() || 'there';
+    const appUrl = `${APP_URL}/sitting/login`;
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <h1 class="greeting">You're Approved!</h1>
+        <p class="message">
+          Dear ${name},
+        </p>
+        <p class="message">
+          Your Club Nanny sitter application has been approved. Your journey with us can start!
+        </p>
+
+        <center>
+          <a href="${appUrl}" class="cta-button">Open Club Nanny</a>
+        </center>
+
+        <p class="help-text">
+          Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
+        </p>
+      </div>
+    `);
+
+    return this.send({
+      to: sitter.email,
+      subject: 'Your Club Nanny Sitter Application Has Been Approved',
+      html
+    });
+  }
+
+  async handleSitterApplicationSubmitted(sitter) {
+    const adminResult = await this.sendSitterApplicationSubmittedToAdmin(sitter);
+    const applicantResult = await this.sendSitterApplicationSubmittedToApplicant(sitter);
+
+    return {
+      admin: adminResult,
+      applicant: applicantResult,
+      success: adminResult.success && applicantResult.success
+    };
   }
 
   async sendPlacementFeeConfirmation(data) {

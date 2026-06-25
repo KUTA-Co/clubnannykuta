@@ -159,8 +159,8 @@ export default function FamilyApplications() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold font-heading text-[#1A1A1A]">Family Applications</h1>
-        <p className="text-gray-500 mt-1">Manage and review family applications</p>
+        <h1 className="text-3xl font-bold font-heading text-[#1A1A1A]">Nanny Families</h1>
+        <p className="text-gray-500 mt-1">Manage and review families seeking nanny services</p>
       </div>
 
       {/* Stats Cards */}
@@ -204,7 +204,7 @@ export default function FamilyApplications() {
 
       {/* Payment Workflow Legend */}
       <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-100">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Family Application Workflow</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Nanny Family Application Workflow</p>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700">
