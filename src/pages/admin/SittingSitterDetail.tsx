@@ -21,6 +21,11 @@ interface Sitter {
   preferredRadius?: number;
   status: string;
   membershipStatus: string;
+  applicationFeeAmountCents?: number;
+  membershipFeeAmountCents?: number;
+  membershipFeeAppliedAt?: string;
+  membershipFeeRefundedAt?: string;
+  membershipFeeRefundId?: string;
   averageRating?: number;
   reviewCount?: number;
   rejectionReason?: string;
@@ -69,7 +74,10 @@ export default function SittingSitterDetail() {
       const res = await authFetch(`/api/admin/sitting/sitters/${id}/${action}`, { method: "PUT", body });
       const data = await res.json();
       if (data.success) {
-        toast({ title: `Sitter ${action}d` });
+        toast({
+          title: `Sitter ${action}d`,
+          description: data.message,
+        });
         fetchSitter();
       } else {
         toast({ title: "Error", description: data.message || `Failed to ${action}`, variant: "destructive" });
@@ -95,6 +103,13 @@ export default function SittingSitterDetail() {
 
   const completed = bookingStats.find((b) => b._id === "completed")?.count || 0;
   const confirmed = bookingStats.find((b) => b._id === "confirmed")?.count || 0;
+  const membershipFeeStatus = sitter.membershipFeeRefundedAt
+    ? `Refunded${sitter.membershipFeeRefundId ? ` (${sitter.membershipFeeRefundId})` : ""}`
+    : sitter.membershipFeeAppliedAt
+      ? "Applied as first month"
+      : sitter.membershipFeeAmountCents
+        ? "Paid, pending approval decision"
+        : undefined;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -145,6 +160,9 @@ export default function SittingSitterDetail() {
           <Row label="Location" value={`${sitter.city}, ${sitter.state} ${sitter.postalCode || ""}`} />
           <Row label="Radius" value={sitter.preferredRadius ? `${sitter.preferredRadius} mi` : undefined} />
           <Row label="Membership" value={sitter.membershipStatus} />
+          <Row label="Application fee" value={sitter.applicationFeeAmountCents ? `$${(sitter.applicationFeeAmountCents / 100).toFixed(2)} paid` : undefined} />
+          <Row label="First month fee" value={sitter.membershipFeeAmountCents ? `$${(sitter.membershipFeeAmountCents / 100).toFixed(2)}` : undefined} />
+          <Row label="First month status" value={membershipFeeStatus} />
           <div className="flex items-center gap-1 pt-1 text-sm text-gray-600">
             <Star className="w-4 h-4" style={{ color: "#C77DA3" }} fill={sitter.reviewCount ? "#C77DA3" : "none"} />
             {sitter.reviewCount ? `${sitter.averageRating?.toFixed(1)} (${sitter.reviewCount} reviews)` : "No reviews yet"}

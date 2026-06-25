@@ -585,13 +585,24 @@ export default function SitterRegistration() {
 
                   {/* Application Fee */}
                   <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: '#F5D5E5' }}>
-                    <h3 className="font-medium text-[#4A4A4A] mb-2">Application Fee</h3>
+                    <h3 className="font-medium text-[#4A4A4A] mb-2">Application & Subscription</h3>
                     <div className="flex justify-between text-sm text-[#4A4A4A]/80">
                       <span>Application Fee (non-refundable)</span>
                       <span className="font-semibold">$45.00</span>
                     </div>
-                    <p className="text-xs text-[#4A4A4A]/60 mt-2">
+                    <div className="flex justify-between text-sm text-[#4A4A4A]/80 mt-2">
+                      <span>First Month Subscription</span>
+                      <span className="font-semibold">$12.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-[#4A4A4A] border-t border-white/50 mt-3 pt-3">
+                      <span className="font-medium">Total Due Today</span>
+                      <span className="font-bold">$57.00</span>
+                    </div>
+                    <p className="text-xs text-[#4A4A4A]/60 mt-3">
                       Covers your application review, interview process, background check and entry into our sitter network.
+                    </p>
+                    <p className="text-xs text-[#4A4A4A]/70 mt-2">
+                      The $12 first month subscription will be refunded if your application is rejected. If approved, it becomes your first monthly subscription fee.
                     </p>
                   </div>
 
@@ -616,7 +627,7 @@ export default function SitterRegistration() {
                         onCheckedChange={(checked) => setValue("membershipConsent", checked as boolean)}
                       />
                       <label htmlFor="membership" className="text-sm text-[#4A4A4A]/80 leading-relaxed cursor-pointer">
-                        I understand that submitting this application grants me a membership to access job postings from families on the Club Nanny app. I will need to download the app and pay the $12/month membership fee to create a profile and have access to the families.
+                        I understand that submitting this application includes a $12 first month subscription fee. This $12 will be refunded if I am rejected, or applied as my first monthly subscription fee if I am approved.
                       </label>
                     </div>
                     {errors.membershipConsent && <p className="text-red-500 text-sm">{errors.membershipConsent.message}</p>}

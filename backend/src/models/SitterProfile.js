@@ -152,6 +152,10 @@ const sitterProfileSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  stripePaymentIntentId: {
+    type: String,
+    trim: true
+  },
   stripeCustomerId: {
     type: String,
     trim: true
@@ -161,6 +165,23 @@ const sitterProfileSchema = new mongoose.Schema({
     default: false
   },
   applicationFeePaidAt: Date,
+  applicationFeeAmountCents: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  membershipFeeAmountCents: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  membershipFeeChargedAt: Date,
+  membershipFeeAppliedAt: Date,
+  membershipFeeRefundedAt: Date,
+  membershipFeeRefundId: {
+    type: String,
+    trim: true
+  },
 
   // Approval
   approvedAt: Date,

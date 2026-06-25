@@ -6,6 +6,7 @@ import {
   BookingRequest,
   SitterResponse
 } from '../models/index.js';
+import stripeService from '../services/stripeService.js';
 
 const router = express.Router();
 
@@ -152,12 +153,16 @@ router.put('/sitters/:id/approve', async (req, res) => {
     }
 
     sitter.status = 'active';
+    sitter.membershipStatus = 'active';
+    sitter.membershipExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    sitter.membershipFeeAppliedAt = sitter.membershipFeeAppliedAt || new Date();
     sitter.approvedAt = new Date();
     sitter.approvedBy = req.user.id;
     await sitter.save();
 
     res.json({
       success: true,
+      message: 'Sitter approved. First month subscription has been applied.',
       sitter
     });
   } catch (error) {
@@ -184,12 +189,42 @@ router.put('/sitters/:id/reject', async (req, res) => {
       });
     }
 
+    let membershipRefund = null;
+    const membershipRefundAmount = sitter.membershipFeeAmountCents || 0;
+
+    if (membershipRefundAmount > 0 && !sitter.membershipFeeRefundedAt) {
+      if (!sitter.stripePaymentIntentId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot refund the membership fee because this sitter has no Stripe payment intent recorded.'
+        });
+      }
+
+      membershipRefund = await stripeService.refundPaymentIntent({
+        paymentIntentId: sitter.stripePaymentIntentId,
+        amount: membershipRefundAmount,
+        metadata: {
+          refundType: 'sitter_membership_rejection',
+          sitterProfileId: sitter._id.toString(),
+          sitterEmail: sitter.email
+        }
+      });
+
+      sitter.membershipFeeRefundId = membershipRefund.id;
+      sitter.membershipFeeRefundedAt = new Date();
+    }
+
     sitter.status = 'rejected';
+    sitter.membershipStatus = 'inactive';
     sitter.rejectionReason = req.body.reason || 'Application rejected';
     await sitter.save();
 
     res.json({
       success: true,
+      message: membershipRefund
+        ? 'Sitter rejected. The $12 first month subscription fee has been refunded.'
+        : 'Sitter rejected.',
+      membershipRefund,
       sitter
     });
   } catch (error) {

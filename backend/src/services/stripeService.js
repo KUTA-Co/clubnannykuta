@@ -234,29 +234,36 @@ class StripeService {
    */
   async createSittingCheckoutSession({ type, email, name }) {
     let lineItems = [];
-    let productName, description;
 
     if (type === 'sitter') {
-      // Sitter: $45 application fee only. The $12/month app membership starts after approval.
-      productName = 'Club Nanny Sitter Application';
-      description = 'Non-refundable sitter application fee ($45)';
+      // Sitter: $45 non-refundable application fee + $12 first month membership.
+      // The $12 is refunded if the sitter is rejected; otherwise it becomes their first month.
       lineItems = [
         {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'Club Nanny Application Fee',
-              description: 'One-time non-refundable application fee'
+              name: 'Club Nanny Sitter Application Fee',
+              description: 'Non-refundable fee for application review, interview process, background check, and entry into the sitter network.'
             },
             unit_amount: SITTING_FEES.sitter_application
+          },
+          quantity: 1
+        },
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Club Nanny First Month Subscription',
+              description: 'Refunded if your sitter application is rejected; applied as your first monthly subscription fee if approved.'
+            },
+            unit_amount: SITTING_FEES.sitter_membership
           },
           quantity: 1
         }
       ];
     } else if (type === 'sitting_family') {
       // Family: $20/month membership
-      productName = 'Club Nanny Family Registration';
-      description = 'First month membership ($20)';
       lineItems = [
         {
           price_data: {
@@ -274,16 +281,33 @@ class StripeService {
       throw new Error(`Invalid sitting registration type: ${type}`);
     }
 
+    const metadata = this.withAppContext({
+      registrationType: type,
+      applicantName: name,
+      applicantEmail: email
+    });
+
+    if (type === 'sitter') {
+      metadata.sitterApplicationFeeCents = String(SITTING_FEES.sitter_application);
+      metadata.sitterMembershipFeeCents = String(SITTING_FEES.sitter_membership);
+    }
+
     const session = await this.ensureConfigured().checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
       customer_email: email,
-      metadata: this.withAppContext({
-        registrationType: type,
-        applicantName: name,
-        applicantEmail: email
-      }),
+      metadata,
+      payment_intent_data: {
+        metadata
+      },
+      custom_text: type === 'sitter'
+        ? {
+            submit: {
+              message: 'Includes a non-refundable $45 application fee and a $12 first month subscription. The $12 will be refunded if your sitter application is rejected, or applied as your first month when approved.'
+            }
+          }
+        : undefined,
       success_url: `${process.env.FRONTEND_URL}/sitting/registration-complete?type=${type}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/sitting/register/${type === 'sitter' ? 'sitter' : 'family'}?payment=cancelled`
     });
@@ -298,6 +322,31 @@ class StripeService {
    */
   getSittingFee(feeType) {
     return SITTING_FEES[feeType];
+  }
+
+  /**
+   * Refund part or all of a PaymentIntent.
+   * @param {Object} options
+   * @param {string} options.paymentIntentId
+   * @param {number} options.amount - Amount in cents
+   * @param {Object} options.metadata
+   * @returns {Object} Stripe refund
+   */
+  async refundPaymentIntent({ paymentIntentId, amount, metadata = {} }) {
+    if (!paymentIntentId) {
+      throw new Error('paymentIntentId is required for a refund');
+    }
+
+    if (!amount || amount <= 0) {
+      throw new Error('A positive refund amount is required');
+    }
+
+    return this.ensureConfigured().refunds.create({
+      payment_intent: paymentIntentId,
+      amount,
+      reason: 'requested_by_customer',
+      metadata: this.withAppContext(metadata)
+    });
   }
 
   /**

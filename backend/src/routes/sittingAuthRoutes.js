@@ -122,6 +122,12 @@ router.post('/complete/sitter', async (req, res) => {
       });
     }
 
+    const applicationFeeAmountCents = Number(
+      session.metadata?.sitterApplicationFeeCents || stripeService.getSittingFee('sitter_application')
+    );
+    const membershipFeeAmountCents = Number(session.metadata?.sitterMembershipFeeCents || 0);
+    const membershipFeeChargedAt = membershipFeeAmountCents > 0 ? new Date() : undefined;
+
     // Derive age from date of birth when provided
     let computedAge = age || 18;
     if (dateOfBirth) {
@@ -207,12 +213,15 @@ router.post('/complete/sitter', async (req, res) => {
       hourlyRate3PlusKids: hourlyRate3PlusKids || 30,
       preferredRadius: preferredRadius || 15,
       status: 'pending_approval', // Requires admin approval
-      membershipStatus: 'active',
-      membershipExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      membershipStatus: 'inactive',
       stripeSessionId: sessionId,
+      stripePaymentIntentId: session.payment_intent,
       stripeCustomerId: session.customer,
       applicationFeePaid: true,
-      applicationFeePaidAt: new Date()
+      applicationFeePaidAt: new Date(),
+      applicationFeeAmountCents,
+      membershipFeeAmountCents,
+      membershipFeeChargedAt
     });
 
     // Generate JWT token

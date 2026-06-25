@@ -325,7 +325,14 @@ router.post('/retry-checkout', async (req, res) => {
 // ============================================
 
 async function handlePaymentSuccess(session) {
-  const { applicationType, applicationId, applicantName, applicantEmail, paymentType } = session.metadata;
+  const { applicationType, applicationId, applicantName, applicantEmail, paymentType, registrationType } = session.metadata;
+
+  // Sitter/family PWA registrations are finalized by /api/sitting/auth/complete/*
+  // after the Checkout success redirect. Do not treat them as nanny-program applications.
+  if (registrationType) {
+    console.log(`Sitting registration payment completed for ${registrationType}. Session: ${session.id}`);
+    return;
+  }
 
   // Club Nanny booking payment (family paid the sitter for a confirmed booking).
   // Handled entirely here; unrelated to the nanny-program application/placement flow.
@@ -338,67 +345,10 @@ async function handlePaymentSuccess(session) {
   const isPlacementFee = paymentType && paymentType.startsWith('placement');
 
   // For the new "pay first" flow, there's no applicationId in metadata.
-  // The application will be created by the success page calling /api/forms/complete-application.
-  // This webhook creates a payment record and alerts admin if application isn't created soon.
+  // The application is created by the success page calling /api/forms/complete-application.
   if (!applicationId && !isPlacementFee) {
     console.log(`Pay-first flow: Payment completed for ${applicationType} application. Session: ${session.id}`);
     console.log(`Application will be created via success page. Applicant: ${applicantName} (${applicantEmail})`);
-
-    // Create a pending payment record that will be completed when success page calls complete-application
-    let payment = await Payment.findOne({ stripeSessionId: session.id });
-    if (!payment) {
-      payment = await Payment.create({
-        stripeSessionId: session.id,
-        stripePaymentIntentId: session.payment_intent,
-        stripeCustomerId: session.customer,
-        applicationType,
-        // No applicationId yet - will be set when application is created
-        applicantEmail,
-        applicantName,
-        amount: stripeService.getApplicationFee(applicationType),
-        status: 'paid_pending_application',  // Special status for pay-first flow
-        completedAt: new Date()
-      });
-    }
-
-    // Schedule a check - if application not created in 5 minutes, alert admin
-    // This handles edge case where user closes browser after payment
-    setTimeout(async () => {
-      try {
-        const checkPayment = await Payment.findById(payment._id);
-        if (checkPayment && checkPayment.status === 'paid_pending_application' && !checkPayment.applicationId) {
-          console.warn(`ALERT: Payment ${session.id} completed but application not created after 5 minutes!`);
-          console.warn(`Applicant: ${applicantName} (${applicantEmail}), Type: ${applicationType}`);
-
-          // Send alert email to admin
-          await emailService.sendAdminAlert({
-            subject: `URGENT: Payment received but application incomplete - ${applicantName}`,
-            message: `
-A payment was received but the application was not saved to the database.
-
-This can happen if the user closed their browser after paying but before the success page loaded.
-
-**Details:**
-- Name: ${applicantName}
-- Email: ${applicantEmail}
-- Type: ${applicationType} application
-- Amount: $${stripeService.getApplicationFee(applicationType) / 100}
-- Stripe Session: ${session.id}
-- Payment Intent: ${session.payment_intent}
-
-**Action Required:**
-Please contact ${applicantName} at ${applicantEmail} to have them re-submit their application form.
-Their payment has been received - they should NOT pay again.
-
-You can verify the payment in the Stripe Dashboard.
-            `.trim()
-          });
-        }
-      } catch (err) {
-        console.error('Error checking orphaned payment:', err);
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-
     return;
   }
 
