@@ -75,7 +75,10 @@ export default function Privacy() {
     yPos += 6;
 
     addText("7. Children's Privacy", 14, true);
-    addText("Our service is not intended for children under 18. We do not knowingly collect personal information from children under 18.", 10);
+    addText("Our service is not intended for children under the age of 16. We do not knowingly collect personal information from children under 16 without appropriate parental or guardian consent where required by law. If you are a parent or guardian and believe your child has provided us with personal information without your consent, please contact us immediately so we can review and remove the information if necessary.", 10);
+    addText("Club Nanny permits individuals ages 16 and older to apply as caregivers on the platform. For caregivers under the age of 18, parental or legal guardian consent may be required prior to account approval and participation in the platform.", 10);
+    addText("Parents and guardians of minor caregivers acknowledge and agree that participation on the platform is voluntary and subject to Club Nanny's screening, safety, and community standards. Club Nanny reserves the right to deny, suspend, or remove any account at its discretion.", 10);
+    addText("Families are solely responsible for evaluating and selecting caregivers that meet their individual preferences and comfort levels. Club Nanny provides a platform for connection and does not employ caregivers or supervise individual childcare arrangements.", 10);
     yPos += 6;
 
     addText("8. Payments", 14, true);
@@ -190,11 +193,29 @@ export default function Privacy() {
 
           <div>
             <h2 className="text-2xl font-bold font-heading text-[#4A4A4A] mb-4">7. Children's Privacy</h2>
-            <p className="leading-relaxed">
-              Our service is not intended for children under 18. We do not knowingly collect personal information from children 
-              under 18. If you are a parent or guardian and believe your child has provided us with personal information, please 
-              contact us immediately.
-            </p>
+            <div className="space-y-4 leading-relaxed">
+              <p>
+                Our service is not intended for children under the age of 16. We do not knowingly collect personal information
+                from children under 16 without appropriate parental or guardian consent where required by law. If you are a
+                parent or guardian and believe your child has provided us with personal information without your consent, please
+                contact us immediately so we can review and remove the information if necessary.
+              </p>
+              <p>
+                Club Nanny permits individuals ages 16 and older to apply as caregivers on the platform. For caregivers under
+                the age of 18, parental or legal guardian consent may be required prior to account approval and participation
+                in the platform.
+              </p>
+              <p>
+                Parents and guardians of minor caregivers acknowledge and agree that participation on the platform is voluntary
+                and subject to Club Nanny's screening, safety, and community standards. Club Nanny reserves the right to deny,
+                suspend, or remove any account at its discretion.
+              </p>
+              <p>
+                Families are solely responsible for evaluating and selecting caregivers that meet their individual preferences
+                and comfort levels. Club Nanny provides a platform for connection and does not employ caregivers or supervise
+                individual childcare arrangements.
+              </p>
+            </div>
           </div>
 
           <div>
