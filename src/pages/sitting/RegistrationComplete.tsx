@@ -209,6 +209,7 @@ export default function RegistrationComplete() {
                 </ul>
               </div>
               <div className="space-y-3">
+                <DownloadAppButton className="w-full justify-center border-[#C77DA3] bg-[#C77DA3] text-white hover:bg-white hover:text-[#C77DA3]" />
                 <GlassButton to="/sitting/family/request" variant="sage" size="lg" className="w-full justify-center">
                   Post a Request
                 </GlassButton>
