@@ -161,8 +161,12 @@ router.put('/sitters/:id/approve', async (req, res) => {
     sitter.approvedBy = req.user.id;
     await sitter.save();
 
-    emailService.sendSitterApprovalEmail(sitter.toObject())
-      .catch(err => console.error('Failed to send sitter approval email:', err.message));
+    try {
+      const emailResult = await emailService.sendSitterApprovalEmail(sitter.toObject());
+      console.log('Sitter approval email processed:', emailResult);
+    } catch (emailError) {
+      console.error('Failed to send sitter approval email:', emailError.message);
+    }
 
     res.json({
       success: true,

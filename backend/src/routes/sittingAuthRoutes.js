@@ -247,8 +247,12 @@ router.post('/complete/sitter', async (req, res) => {
       membershipFeeChargedAt
     });
 
-    emailService.handleSitterApplicationSubmitted(profile.toObject())
-      .catch(err => console.error('Failed to send sitter application notification emails:', err.message));
+    try {
+      const emailResult = await emailService.handleSitterApplicationSubmitted(profile.toObject());
+      console.log('Sitter application notification emails processed:', emailResult);
+    } catch (emailError) {
+      console.error('Failed to send sitter application notification emails:', emailError.message);
+    }
 
     // Generate JWT token
     const token = jwt.sign(
