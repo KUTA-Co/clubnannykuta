@@ -1115,6 +1115,49 @@ class EmailService {
     });
   }
 
+  async sendSitterRejectionEmail(sitter, options = {}) {
+    const name = `${sitter.firstName || ''} ${sitter.lastName || ''}`.trim() || 'there';
+    const membershipRefunded = Boolean(options.membershipRefunded);
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <h1 class="greeting">An Update on Your Application</h1>
+        <p class="message">
+          Dear ${name},
+        </p>
+        <p class="message">
+          Thank you so much for taking the time to apply to Club Nanny. We are grateful for your interest in serving families through our community.
+        </p>
+        <p class="message">
+          After careful review, we are unable to move forward with your sitter application at this time. This decision does not take away from the care, effort, and heart you put into your application.
+        </p>
+
+        ${membershipRefunded ? `
+        <div class="highlight-box">
+          <h3>Refund Notice</h3>
+          <p>
+            Your $12 first month subscription fee has been refunded. Please allow a few business days for it to appear with your bank or card provider.
+          </p>
+        </div>
+        ` : ''}
+
+        <p class="message">
+          We wish you the very best as you continue forward, and we appreciate the opportunity to get to know you.
+        </p>
+
+        <p class="help-text">
+          Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
+        </p>
+      </div>
+    `);
+
+    return this.send({
+      to: sitter.email,
+      subject: 'An Update on Your Club Nanny Application',
+      html
+    });
+  }
+
   async handleSitterApplicationSubmitted(sitter) {
     const adminResult = await this.sendSitterApplicationSubmittedToAdmin(sitter);
     const applicantResult = await this.sendSitterApplicationSubmittedToApplicant(sitter);
@@ -1193,8 +1236,8 @@ class EmailService {
         color: '#2E7D32'
       },
       rejected: {
-        title: 'Application Update',
-        message: `Thank you for your interest in Club Nanny. After careful review, we're unable to move forward with your application at this time.`,
+        title: 'An Update on Your Application',
+        message: `Thank you so much for taking the time to apply to Club Nanny. After careful review, we're unable to move forward with your ${typeLabel.toLowerCase()} application at this time. We are grateful for the care and effort you shared with us, and we wish you the very best as you continue forward.`,
         color: '#D32F2F'
       },
       reviewing: {

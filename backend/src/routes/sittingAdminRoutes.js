@@ -227,12 +227,24 @@ router.put('/sitters/:id/reject', async (req, res) => {
     sitter.rejectionReason = req.body.reason || 'Application rejected';
     await sitter.save();
 
+    let rejectionEmailSent = false;
+    try {
+      const emailResult = await emailService.sendSitterRejectionEmail(sitter.toObject(), {
+        membershipRefunded: Boolean(membershipRefund)
+      });
+      rejectionEmailSent = Boolean(emailResult?.success);
+      console.log('Sitter rejection email processed:', emailResult);
+    } catch (emailError) {
+      console.error('Failed to send sitter rejection email:', emailError.message);
+    }
+
     res.json({
       success: true,
       message: membershipRefund
         ? 'Sitter rejected. The $12 first month subscription fee has been refunded.'
         : 'Sitter rejected.',
       membershipRefund,
+      rejectionEmailSent,
       sitter
     });
   } catch (error) {
