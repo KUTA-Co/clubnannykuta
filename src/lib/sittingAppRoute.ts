@@ -23,7 +23,10 @@ export async function resolveSittingAppRoute(token: string | null) {
     const role = data.role || data.user?.role;
 
     if (data.authenticated) {
-      if (role === "admin") target = "/admin";
+      // The installed PWA is for sitters/families. It shares browser storage
+      // with the website, so an admin token can exist on the same device; never
+      // auto-launch that token into the admin dashboard from the app icon.
+      if (role === "admin") target = "/sitting/login";
       else if (data.hasSitterProfile) target = "/sitting/sitter";
       else if (data.hasFamilyProfile) target = "/sitting/family";
     }
