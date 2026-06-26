@@ -188,7 +188,7 @@ class MatchingService {
     const responses = await SitterResponse.find({ requestId })
       .populate(
         'sitterId',
-        'firstName lastName profilePhoto bio age hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids yearsOfExperience ageGroupsWorkedWith typesOfExperience experience faithJourney whyCalledToServe specialSkills city state averageRating reviewCount'
+        'firstName lastName profilePhoto bio age howDidYouHear hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids yearsOfExperience ageGroupsWorkedWith typesOfExperience experience faithJourney whyCalledToServe specialSkills city state averageRating reviewCount'
       )
       .sort({ respondedAt: -1 });
 

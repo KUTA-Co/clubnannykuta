@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, MapPin, Users, User, Check, Loader2, Trash2, Star, Phone, Mail } from "lucide-react";
+import { Clock, MapPin, Users, User, Check, Loader2, Trash2, Star, Phone, Mail, X } from "lucide-react";
 import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -22,10 +22,17 @@ interface SitterResponse {
     bio?: string;
     experience?: string;
     age?: number;
+    howDidYouHear?: string;
     hourlyRate: number;
     hourlyRate1Kid?: number;
     hourlyRate2Kids?: number;
     hourlyRate3PlusKids?: number;
+    yearsOfExperience?: string;
+    ageGroupsWorkedWith?: string;
+    typesOfExperience?: string;
+    faithJourney?: string;
+    whyCalledToServe?: string;
+    specialSkills?: string;
     city: string;
     state: string;
     averageRating?: number;
@@ -69,6 +76,51 @@ interface Request {
   };
 }
 
+function hasText(value?: string | number | null) {
+  return value !== undefined && value !== null && String(value).trim().length > 0;
+}
+
+function ProfileField({ label, value }: { label: string; value?: string | number | null }) {
+  if (!hasText(value)) return null;
+
+  return (
+    <div className="rounded-xl border border-[#F5D5E5] bg-white p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#4A4A4A]/45">{label}</p>
+      <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#4A4A4A]">{value}</p>
+    </div>
+  );
+}
+
+function RateGrid({ sitter, numberOfChildren }: { sitter: SitterResponse['sitterId']; numberOfChildren: number }) {
+  const activeCount = Math.max(1, Number(numberOfChildren) || 1);
+  const rateItems = [
+    { label: '1 child', count: 1 },
+    { label: '2 children', count: 2 },
+    { label: '3+ children', count: 3 }
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+      {rateItems.map((item) => {
+        const isActive =
+          (activeCount === item.count) ||
+          (activeCount >= 3 && item.count === 3);
+
+        return (
+          <div
+            key={item.label}
+            className="rounded-lg px-2 py-2"
+            style={{ backgroundColor: isActive ? '#F5D5E5' : '#F7F7F7' }}
+          >
+            <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(sitter, item.count))}</p>
+            <p className="text-[#4A4A4A]/50">{item.label}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function RequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -78,6 +130,7 @@ export default function RequestDetail() {
   const [request, setRequest] = useState<Request | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<SitterResponse | null>(null);
 
   useEffect(() => {
     fetchRequest();
@@ -212,6 +265,149 @@ export default function RequestDetail() {
 
   return (
     <div>
+      {selectedResponse && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b bg-white p-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <div
+                  className="h-16 w-16 shrink-0 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: '#F5D5E5' }}
+                >
+                  {selectedResponse.sitterId.profilePhoto ? (
+                    <img
+                      src={selectedResponse.sitterId.profilePhoto}
+                      alt=""
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-8 w-8" style={{ color: '#C77DA3' }} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-[#4A4A4A]">
+                    {selectedResponse.sitterId.firstName} {selectedResponse.sitterId.lastName}
+                  </h2>
+                  <p className="text-sm text-[#4A4A4A]/60">
+                    {selectedResponse.sitterId.age ? `Age ${selectedResponse.sitterId.age} • ` : ''}
+                    {selectedResponse.sitterId.city}, {selectedResponse.sitterId.state}
+                  </p>
+                  {(selectedResponse.sitterId.reviewCount ?? 0) > 0 && (
+                    <p className="mt-1 flex items-center gap-1 text-sm text-[#4A4A4A]/70">
+                      <Star className="h-4 w-4" style={{ color: '#C77DA3' }} fill="#C77DA3" />
+                      {selectedResponse.sitterId.averageRating?.toFixed(1)}
+                      <span className="text-[#4A4A4A]/40">({selectedResponse.sitterId.reviewCount} reviews)</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedResponse(null)}
+                aria-label="Close sitter profile"
+                className="rounded-full p-1 text-[#4A4A4A]/50 hover:bg-gray-100 hover:text-[#4A4A4A]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5 p-5">
+              <div className="rounded-xl bg-[#F5D5E5]/35 p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[#4A4A4A]">Rate for this request</p>
+                    <p className="text-xs text-[#4A4A4A]/60">{rateContextLabel(request.numberOfChildren)}</p>
+                  </div>
+                  <p className="text-2xl font-bold" style={{ color: '#C77DA3' }}>
+                    {formatHourlyRate(getApplicableHourlyRate(selectedResponse.sitterId, request.numberOfChildren))}/hour
+                  </p>
+                </div>
+                <RateGrid sitter={selectedResponse.sitterId} numberOfChildren={request.numberOfChildren} />
+              </div>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">About & Experience</h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <ProfileField label="Bio" value={selectedResponse.sitterId.bio} />
+                  <ProfileField label="Childcare Experience" value={selectedResponse.sitterId.experience} />
+                  <ProfileField label="Years of Experience" value={selectedResponse.sitterId.yearsOfExperience} />
+                  <ProfileField label="Age Groups Worked With" value={selectedResponse.sitterId.ageGroupsWorkedWith} />
+                  <ProfileField label="Types of Experience" value={selectedResponse.sitterId.typesOfExperience} />
+                  <ProfileField label="Special Skills" value={selectedResponse.sitterId.specialSkills} />
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">Faith & Calling</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <ProfileField label="Faith Journey" value={selectedResponse.sitterId.faithJourney} />
+                  <ProfileField label="Why They Feel Called to Serve" value={selectedResponse.sitterId.whyCalledToServe} />
+                </div>
+              </section>
+
+              {selectedResponse.message && (
+                <section>
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">Message to Family</h3>
+                  <div className="rounded-xl bg-gray-50 p-4">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A4A4A]/75">"{selectedResponse.message}"</p>
+                  </div>
+                </section>
+              )}
+
+              {selectedResponse.sitterReviews && selectedResponse.sitterReviews.length > 0 && (
+                <section>
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">Reviews</h3>
+                  <div className="space-y-2">
+                    {selectedResponse.sitterReviews.map((rev) => (
+                      <div key={rev._id} className="rounded-xl bg-gray-50 p-3">
+                        <div className="mb-1 flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <Star
+                              key={n}
+                              className="h-3.5 w-3.5"
+                              style={{ color: '#C77DA3' }}
+                              fill={n <= rev.rating ? '#C77DA3' : 'none'}
+                            />
+                          ))}
+                          {rev.familyId?.householdName && (
+                            <span className="ml-1 text-xs text-[#4A4A4A]/50">- {rev.familyId.householdName}</span>
+                          )}
+                        </div>
+                        {rev.comment && <p className="text-sm text-[#4A4A4A]/70">{rev.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => setSelectedResponse(null)}
+                  variant="outline"
+                  className="border-[#C77DA3] text-[#C77DA3] hover:bg-[#F5D5E5]"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => handleConfirmSitter(selectedResponse.sitterId._id)}
+                  disabled={confirmingId === selectedResponse.sitterId._id}
+                  style={{ backgroundColor: '#C77DA3' }}
+                  className="text-white hover:opacity-90"
+                >
+                  {confirmingId === selectedResponse.sitterId._id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" /> Confirm This Sitter
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold font-heading text-[#4A4A4A]">
@@ -417,19 +613,8 @@ export default function RequestDetail() {
                               </div>
                             </div>
 
-                            <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs">
-                              <div className="rounded-lg bg-gray-50 px-2 py-2">
-                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 1))}</p>
-                                <p className="text-[#4A4A4A]/50">1 child</p>
-                              </div>
-                              <div className="rounded-lg bg-gray-50 px-2 py-2">
-                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 2))}</p>
-                                <p className="text-[#4A4A4A]/50">2 children</p>
-                              </div>
-                              <div className="rounded-lg bg-gray-50 px-2 py-2">
-                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 3))}</p>
-                                <p className="text-[#4A4A4A]/50">3+ children</p>
-                              </div>
+                            <div className="mb-3">
+                              <RateGrid sitter={response.sitterId} numberOfChildren={request.numberOfChildren} />
                             </div>
 
                             {response.sitterId.bio && (
@@ -474,20 +659,29 @@ export default function RequestDetail() {
                               </div>
                             )}
 
-                            <Button
-                              onClick={() => handleConfirmSitter(response.sitterId._id)}
-                              disabled={confirmingId === response.sitterId._id}
-                              style={{ backgroundColor: '#C77DA3' }}
-                              className="text-white hover:opacity-90"
-                            >
-                              {confirmingId === response.sitterId._id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" /> Confirm This Sitter
-                                </>
-                              )}
-                            </Button>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <Button
+                                onClick={() => setSelectedResponse(response)}
+                                variant="outline"
+                                className="border-[#C77DA3] text-[#C77DA3] hover:bg-[#F5D5E5]"
+                              >
+                                View Full Profile
+                              </Button>
+                              <Button
+                                onClick={() => handleConfirmSitter(response.sitterId._id)}
+                                disabled={confirmingId === response.sitterId._id}
+                                style={{ backgroundColor: '#C77DA3' }}
+                                className="text-white hover:opacity-90"
+                              >
+                                {confirmingId === response.sitterId._id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4 mr-2" /> Confirm This Sitter
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
