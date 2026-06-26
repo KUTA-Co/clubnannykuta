@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, User, Upload } from "lucide-react";
+import { Loader2, Save, Star, User, Upload } from "lucide-react";
 import { resizeImageToDataUrl } from "@/lib/imageResize";
 import { NotificationPermission } from "@/components/NotificationPermission";
+import { formatHourlyRate, getApplicableHourlyRate } from "@/lib/sitterRates";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -22,7 +23,15 @@ const profileSchema = z.object({
   age: z.coerce.number().min(16).max(100),
   bio: z.string().optional(),
   experience: z.string().optional(),
-  hourlyRate: z.coerce.number().min(10).max(100),
+  yearsOfExperience: z.string().optional(),
+  ageGroupsWorkedWith: z.string().optional(),
+  typesOfExperience: z.string().optional(),
+  faithJourney: z.string().optional(),
+  whyCalledToServe: z.string().optional(),
+  specialSkills: z.string().optional(),
+  hourlyRate1Kid: z.coerce.number().min(0).max(200),
+  hourlyRate2Kids: z.coerce.number().min(0).max(200),
+  hourlyRate3PlusKids: z.coerce.number().min(0).max(200),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   postalCode: z.string().min(5, "Please enter a valid ZIP code"),
@@ -31,6 +40,14 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
+interface SitterReview {
+  _id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  familyId?: { householdName?: string };
+}
+
 export default function SitterProfile() {
   const { token } = useAuth();
   const { toast } = useToast();
@@ -38,6 +55,7 @@ export default function SitterProfile() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [reviews, setReviews] = useState<SitterReview[]>([]);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema)
@@ -63,12 +81,28 @@ export default function SitterProfile() {
           age: data.profile.age || 18,
           bio: data.profile.bio || '',
           experience: data.profile.experience || '',
-          hourlyRate: data.profile.hourlyRate || 20,
+          yearsOfExperience: data.profile.yearsOfExperience || '',
+          ageGroupsWorkedWith: data.profile.ageGroupsWorkedWith || '',
+          typesOfExperience: data.profile.typesOfExperience || '',
+          faithJourney: data.profile.faithJourney || '',
+          whyCalledToServe: data.profile.whyCalledToServe || '',
+          specialSkills: data.profile.specialSkills || '',
+          hourlyRate1Kid: data.profile.hourlyRate1Kid || data.profile.hourlyRate || 20,
+          hourlyRate2Kids: data.profile.hourlyRate2Kids || data.profile.hourlyRate || 25,
+          hourlyRate3PlusKids: data.profile.hourlyRate3PlusKids || data.profile.hourlyRate || 30,
           city: data.profile.city,
           state: data.profile.state,
           postalCode: data.profile.postalCode || '',
           preferredRadius: data.profile.preferredRadius || 15
         });
+      }
+
+      const reviewsResponse = await fetch(`${API_URL}/api/sitter/reviews`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const reviewsData = await reviewsResponse.json();
+      if (reviewsData.success) {
+        setReviews(reviewsData.reviews || []);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -112,7 +146,10 @@ export default function SitterProfile() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          ...data,
+          hourlyRate: data.hourlyRate1Kid
+        })
       });
 
       const result = await response.json();
@@ -340,7 +377,7 @@ export default function SitterProfile() {
                 <Textarea
                   id="experience"
                   {...form.register("experience")}
-                  className="mt-1 min-h-[80px]"
+                  className="mt-1 min-h-[120px]"
                   placeholder="Describe your experience with children..."
                 />
                 {form.formState.errors.experience && (
@@ -348,18 +385,166 @@ export default function SitterProfile() {
                 )}
               </div>
 
-              <div className="w-48">
-                <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-                <Input
-                  id="hourlyRate"
-                  type="number"
-                  {...form.register("hourlyRate")}
-                  className="mt-1"
-                />
-                {form.formState.errors.hourlyRate && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.hourlyRate.message}</p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="yearsOfExperience">Years of Experience</Label>
+                  <Input
+                    id="yearsOfExperience"
+                    {...form.register("yearsOfExperience")}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="ageGroupsWorkedWith">Age Groups Worked With</Label>
+                  <Input
+                    id="ageGroupsWorkedWith"
+                    {...form.register("ageGroupsWorkedWith")}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="typesOfExperience">Types of Experience</Label>
+                  <Input
+                    id="typesOfExperience"
+                    {...form.register("typesOfExperience")}
+                    className="mt-1"
+                  />
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Rates */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg">Hourly Rates</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="hourlyRate1Kid">1 Child ($/hour)</Label>
+                  <Input
+                    id="hourlyRate1Kid"
+                    type="number"
+                    {...form.register("hourlyRate1Kid")}
+                    className="mt-1"
+                  />
+                  {form.formState.errors.hourlyRate1Kid && (
+                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.hourlyRate1Kid.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="hourlyRate2Kids">2 Children ($/hour)</Label>
+                  <Input
+                    id="hourlyRate2Kids"
+                    type="number"
+                    {...form.register("hourlyRate2Kids")}
+                    className="mt-1"
+                  />
+                  {form.formState.errors.hourlyRate2Kids && (
+                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.hourlyRate2Kids.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="hourlyRate3PlusKids">3+ Children ($/hour)</Label>
+                  <Input
+                    id="hourlyRate3PlusKids"
+                    type="number"
+                    {...form.register("hourlyRate3PlusKids")}
+                    className="mt-1"
+                  />
+                  {form.formState.errors.hourlyRate3PlusKids && (
+                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.hourlyRate3PlusKids.message}</p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#F5D5E5]/40 p-3 text-center text-sm">
+                <div>
+                  <p className="font-bold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(form.watch(), 1))}</p>
+                  <p className="text-[#4A4A4A]/50">1 child</p>
+                </div>
+                <div>
+                  <p className="font-bold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(form.watch(), 2))}</p>
+                  <p className="text-[#4A4A4A]/50">2 children</p>
+                </div>
+                <div>
+                  <p className="font-bold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(form.watch(), 3))}</p>
+                  <p className="text-[#4A4A4A]/50">3+ children</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Calling */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg">Faith & Calling</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="faithJourney">Faith Journey</Label>
+                <Textarea
+                  id="faithJourney"
+                  {...form.register("faithJourney")}
+                  className="mt-1 min-h-[120px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="whyCalledToServe">Why You Feel Called to Serve</Label>
+                <Textarea
+                  id="whyCalledToServe"
+                  {...form.register("whyCalledToServe")}
+                  className="mt-1 min-h-[120px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="specialSkills">Special Skills</Label>
+                <Textarea
+                  id="specialSkills"
+                  {...form.register("specialSkills")}
+                  className="mt-1 min-h-[80px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reviews */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Star className="w-5 h-5" style={{ color: '#C77DA3' }} fill={profile?.reviewCount ? '#C77DA3' : 'none'} />
+                Family Reviews
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reviews.length === 0 ? (
+                <p className="text-sm text-[#4A4A4A]/60">No reviews yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map((review) => (
+                    <div key={review._id} className="rounded-xl border border-[#F5D5E5] p-4">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <Star
+                              key={n}
+                              className="w-4 h-4"
+                              style={{ color: '#C77DA3' }}
+                              fill={n <= review.rating ? '#C77DA3' : 'none'}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-medium text-[#4A4A4A]">
+                          {review.familyId?.householdName || 'Family'}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#4A4A4A]/70">{review.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

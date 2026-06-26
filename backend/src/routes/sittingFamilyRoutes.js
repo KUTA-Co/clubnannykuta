@@ -285,7 +285,7 @@ router.get('/requests', async (req, res) => {
     }
 
     const requests = await BookingRequest.find(query)
-      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate')
+      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids')
       .sort({ date: upcoming === 'true' ? 1 : -1 });
 
     // Get response counts for open requests
@@ -333,7 +333,10 @@ router.get('/requests/:id', async (req, res) => {
     const request = await BookingRequest.findOne({
       _id: req.params.id,
       familyId: profile._id
-    }).populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate bio experience city state');
+    }).populate(
+      'confirmedSitterId',
+      'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids bio experience city state'
+    );
 
     if (!request) {
       return res.status(404).json({
@@ -611,7 +614,7 @@ router.post('/requests/:id/confirm', async (req, res) => {
 
     // Get updated request with sitter info
     const updatedRequest = await BookingRequest.findById(request._id)
-      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate');
+      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids');
 
     // Notify the confirmed sitter, and gently notify the non-selected sitters (fire-and-forget)
     notificationService.notifyBookingConfirmed(request, sitter, profile);
@@ -665,7 +668,7 @@ router.get('/bookings', async (req, res) => {
     }
 
     const bookings = await BookingRequest.find(query)
-      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate')
+      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids')
       .sort({ date: upcoming === 'true' ? 1 : -1 });
 
     res.json({

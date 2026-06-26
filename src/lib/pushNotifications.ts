@@ -2,6 +2,7 @@
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 const API_URL = import.meta.env.VITE_API_URL || '';
+let cachedVapidPublicKey: string | null = VAPID_PUBLIC_KEY || null;
 
 // Read the stored auth token so subscriptions get associated with the logged-in user
 function getAuthToken(): string | null {
@@ -46,26 +47,47 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return await Notification.requestPermission();
 }
 
+async function getVapidPublicKey(): Promise<string> {
+  if (cachedVapidPublicKey) {
+    return cachedVapidPublicKey;
+  }
+
+  const response = await fetch(`${API_URL}/api/push/vapid-public-key`);
+  if (!response.ok) {
+    throw new Error('Push notifications are not configured yet');
+  }
+
+  const data = await response.json();
+  if (!data.success || !data.publicKey) {
+    throw new Error(data.message || 'Push notifications are not configured yet');
+  }
+
+  cachedVapidPublicKey = data.publicKey;
+  return cachedVapidPublicKey;
+}
+
 export async function subscribeToPush(): Promise<PushSubscription | null> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY) {
-    console.warn('Push notifications not supported or VAPID key not configured');
+  if (!isPushSupported()) {
+    console.warn('Push notifications not supported');
     return null;
   }
 
   try {
+    const vapidPublicKey = await getVapidPublicKey();
     const registration = await navigator.serviceWorker.ready;
 
     // Check existing subscription
     let subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
+      await saveSubscriptionToServer(subscription);
       return subscription;
     }
 
     // Create new subscription
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
     // Send subscription to server

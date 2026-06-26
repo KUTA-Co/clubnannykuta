@@ -156,6 +156,10 @@ export default function RegistrationComplete() {
                 <ul className="text-sm text-[#4A4A4A]/70 space-y-2">
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5" style={{ color: '#E8A0BF' }} />
+                    Download the Club Nanny app
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 mt-0.5" style={{ color: '#E8A0BF' }} />
                     Our team will review your application
                   </li>
                   <li className="flex items-start gap-2">
@@ -194,6 +198,10 @@ export default function RegistrationComplete() {
               <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
                 <h3 className="font-medium text-[#4A4A4A] mb-2">Get Started</h3>
                 <ul className="text-sm text-[#4A4A4A]/70 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 mt-0.5" style={{ color: '#C77DA3' }} />
+                    Download the Club Nanny app
+                  </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5" style={{ color: '#C77DA3' }} />
                     Post your first babysitting request

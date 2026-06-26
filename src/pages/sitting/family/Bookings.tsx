@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Clock, User, Phone, Mail, Check, Star, Loader2, List, CalendarDays, CreditCard, RotateCcw } from "lucide-react";
+import { MapPin, Clock, User, Phone, Mail, Check, Star, Loader2, List, CalendarDays, RotateCcw, X } from "lucide-react";
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
+import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -35,6 +36,9 @@ interface Booking {
     email?: string;
     profilePhoto?: string;
     hourlyRate: number;
+    hourlyRate1Kid?: number;
+    hourlyRate2Kids?: number;
+    hourlyRate3PlusKids?: number;
   };
 }
 
@@ -97,7 +101,6 @@ export default function FamilyBookings() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [payingId, setPayingId] = useState<string | null>(null);
 
   // Review state
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
@@ -124,26 +127,6 @@ export default function FamilyBookings() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handlePay = async (id: string) => {
-    setPayingId(id);
-    try {
-      const res = await fetch(`${API_URL}/api/sitting/family/bookings/${id}/pay`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success && data.url) {
-        window.location.href = data.url;
-      } else {
-        toast({ title: 'Error', description: data.message || 'Could not start payment', variant: 'destructive' });
-        setPayingId(null);
-      }
-    } catch {
-      toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
-      setPayingId(null);
-    }
-  };
 
   const fetchBookings = async () => {
     try {
@@ -197,8 +180,10 @@ export default function FamilyBookings() {
       });
       const data = await res.json();
       if (data.success) {
-        toast({ title: 'Booking completed', description: 'You can now leave a review.' });
-        fetchBookings();
+        toast({ title: 'Booking completed', description: 'Please leave a quick review for your sitter.' });
+        await fetchBookings();
+        setActiveTab('past');
+        openReview(id);
       } else {
         toast({ title: 'Error', description: data.message || 'Failed to complete booking', variant: 'destructive' });
       }
@@ -215,6 +200,12 @@ export default function FamilyBookings() {
     setReviewComment('');
   };
 
+  const closeReview = () => {
+    setReviewingId(null);
+    setReviewRating(0);
+    setReviewComment('');
+  };
+
   const submitReview = async (id: string) => {
     setSubmittingReview(true);
     try {
@@ -227,11 +218,11 @@ export default function FamilyBookings() {
       if (data.success) {
         toast({ title: 'Thanks for your review!' });
         setReviewedIds((prev) => new Set(prev).add(id));
-        setReviewingId(null);
+        closeReview();
       } else {
         if (data.message?.toLowerCase().includes('already')) {
           setReviewedIds((prev) => new Set(prev).add(id));
-          setReviewingId(null);
+          closeReview();
         }
         toast({ title: 'Error', description: data.message || 'Failed to submit review', variant: 'destructive' });
       }
@@ -266,9 +257,58 @@ export default function FamilyBookings() {
   }
 
   const bookings = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
+  const reviewingBooking = reviewingId
+    ? [...upcomingBookings, ...pastBookings].find((booking) => booking._id === reviewingId)
+    : null;
 
   return (
     <div>
+      {reviewingBooking && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-[#4A4A4A]">Review your sitter</h2>
+                <p className="text-sm text-[#4A4A4A]/60">
+                  {reviewingBooking.confirmedSitterId?.firstName} {reviewingBooking.confirmedSitterId?.lastName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeReview}
+                aria-label="Close review"
+                className="rounded-full p-1 text-[#4A4A4A]/50 hover:bg-gray-100 hover:text-[#4A4A4A]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <StarRating value={reviewRating} onChange={setReviewRating} />
+              <Textarea
+                placeholder="Share how it went (optional)"
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={4}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => submitReview(reviewingBooking._id)}
+                  disabled={submittingReview || reviewRating === 0}
+                  size="sm"
+                  style={{ backgroundColor: '#C77DA3' }}
+                  className="flex-1 text-white hover:opacity-90"
+                >
+                  {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Review'}
+                </Button>
+                <Button onClick={closeReview} size="sm" variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold font-heading text-[#4A4A4A]">My Bookings</h1>
         {/* View toggle */}
@@ -387,24 +427,11 @@ export default function FamilyBookings() {
                           </Button>
                         )}
 
-                        {/* Payment (any booking with a confirmed sitter) */}
-                        {booking.confirmedSitterId && (
+                        {booking.payment?.status === 'paid' && (
                           <div className="mt-3">
-                            {booking.payment?.status === 'paid' ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium" style={{ backgroundColor: '#D4EDDA', color: '#155724' }}>
-                                <Check className="w-4 h-4" /> Paid{booking.payment.amountCents ? ` · ${formatCents(booking.payment.amountCents)}` : ''}
-                              </span>
-                            ) : (
-                              <Button
-                                onClick={() => handlePay(booking._id)}
-                                disabled={payingId === booking._id}
-                                size="sm"
-                                style={{ backgroundColor: '#C77DA3' }}
-                                className="text-white hover:opacity-90"
-                              >
-                                {payingId === booking._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4 mr-1" /> Pay Sitter</>}
-                              </Button>
-                            )}
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium" style={{ backgroundColor: '#D4EDDA', color: '#155724' }}>
+                              <Check className="w-4 h-4" /> Paid{booking.payment.amountCents ? ` · ${formatCents(booking.payment.amountCents)}` : ''}
+                            </span>
                           </div>
                         )}
 
@@ -415,31 +442,6 @@ export default function FamilyBookings() {
                               <span className="inline-flex items-center gap-1 text-sm text-[#4A4A4A]/60">
                                 <Check className="w-4 h-4" style={{ color: '#C77DA3' }} /> Review submitted
                               </span>
-                            ) : reviewingId === booking._id ? (
-                              <div className="p-4 rounded-xl border border-[#F5D5E5] space-y-3">
-                                <p className="text-sm font-medium text-[#4A4A4A]">Rate your sitter</p>
-                                <StarRating value={reviewRating} onChange={setReviewRating} />
-                                <Textarea
-                                  placeholder="Share how it went (optional)"
-                                  value={reviewComment}
-                                  onChange={(e) => setReviewComment(e.target.value)}
-                                  rows={3}
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    onClick={() => submitReview(booking._id)}
-                                    disabled={submittingReview || reviewRating === 0}
-                                    size="sm"
-                                    style={{ backgroundColor: '#C77DA3' }}
-                                    className="text-white hover:opacity-90"
-                                  >
-                                    {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Review'}
-                                  </Button>
-                                  <Button onClick={() => setReviewingId(null)} size="sm" variant="outline">
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
                             ) : (
                               <Button
                                 onClick={() => openReview(booking._id)}
@@ -490,7 +492,9 @@ export default function FamilyBookings() {
                               <p className="font-bold text-[#4A4A4A]">
                                 {booking.confirmedSitterId.firstName} {booking.confirmedSitterId.lastName}
                               </p>
-                              <p className="text-sm text-[#4A4A4A]/60">${booking.confirmedSitterId.hourlyRate}/hour</p>
+                              <p className="text-sm text-[#4A4A4A]/60">
+                                {formatHourlyRate(getApplicableHourlyRate(booking.confirmedSitterId, booking.numberOfChildren))}/hour {rateContextLabel(booking.numberOfChildren)}
+                              </p>
                             </div>
                           </div>
 

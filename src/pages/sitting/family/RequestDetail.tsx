@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, MapPin, Users, User, Check, Loader2, Trash2, Star, Phone, Mail } from "lucide-react";
+import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -22,6 +23,9 @@ interface SitterResponse {
     experience?: string;
     age?: number;
     hourlyRate: number;
+    hourlyRate1Kid?: number;
+    hourlyRate2Kids?: number;
+    hourlyRate3PlusKids?: number;
     city: string;
     state: string;
     averageRating?: number;
@@ -59,6 +63,9 @@ interface Request {
     email?: string;
     profilePhoto?: string;
     hourlyRate: number;
+    hourlyRate1Kid?: number;
+    hourlyRate2Kids?: number;
+    hourlyRate3PlusKids?: number;
   };
 }
 
@@ -201,6 +208,7 @@ export default function RequestDetail() {
   const isConfirmed = request.status === 'confirmed';
   const confirmedSitter = request.confirmedSitterId;
   const canCancel = ['open', 'responses_received'].includes(request.status);
+  const confirmedRate = getApplicableHourlyRate(confirmedSitter, request.numberOfChildren);
 
   return (
     <div>
@@ -254,7 +262,9 @@ export default function RequestDetail() {
                 <p className="font-bold text-[#4A4A4A]">
                   {confirmedSitter.firstName} {confirmedSitter.lastName}
                 </p>
-                <p className="text-sm text-[#4A4A4A]/60">${confirmedSitter.hourlyRate}/hour</p>
+                <p className="text-sm text-[#4A4A4A]/60">
+                  {formatHourlyRate(confirmedRate)}/hour {rateContextLabel(request.numberOfChildren)}
+                </p>
               </div>
 
               <div className="space-y-2 text-sm">
@@ -357,7 +367,9 @@ export default function RequestDetail() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {interestedResponses.map((response) => (
+                  {interestedResponses.map((response) => {
+                    const applicableRate = getApplicableHourlyRate(response.sitterId, request.numberOfChildren);
+                    return (
                     <Card key={response._id}>
                       <CardContent className="p-6">
                         <div className="flex flex-col md:flex-row md:items-start gap-4">
@@ -397,9 +409,26 @@ export default function RequestDetail() {
                               </div>
                               <div className="text-right">
                                 <p className="text-lg font-bold" style={{ color: '#C77DA3' }}>
-                                  ${response.sitterId.hourlyRate}
+                                  {formatHourlyRate(applicableRate)}
                                 </p>
-                                <p className="text-xs text-[#4A4A4A]/60">per hour</p>
+                                <p className="text-xs text-[#4A4A4A]/60">
+                                  per hour {rateContextLabel(request.numberOfChildren)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs">
+                              <div className="rounded-lg bg-gray-50 px-2 py-2">
+                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 1))}</p>
+                                <p className="text-[#4A4A4A]/50">1 child</p>
+                              </div>
+                              <div className="rounded-lg bg-gray-50 px-2 py-2">
+                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 2))}</p>
+                                <p className="text-[#4A4A4A]/50">2 children</p>
+                              </div>
+                              <div className="rounded-lg bg-gray-50 px-2 py-2">
+                                <p className="font-semibold text-[#4A4A4A]">{formatHourlyRate(getApplicableHourlyRate(response.sitterId, 3))}</p>
+                                <p className="text-[#4A4A4A]/50">3+ children</p>
                               </div>
                             </div>
 
@@ -463,7 +492,7 @@ export default function RequestDetail() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                  )})}
                 </div>
               )}
             </>

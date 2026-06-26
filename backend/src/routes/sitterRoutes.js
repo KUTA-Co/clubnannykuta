@@ -64,7 +64,10 @@ router.put('/profile', async (req, res) => {
   try {
     const allowedUpdates = [
       'firstName', 'lastName', 'phone', 'bio', 'age',
-      'hourlyRate', 'experience', 'city', 'state', 'postalCode', 'preferredRadius'
+      'hourlyRate', 'hourlyRate1Kid', 'hourlyRate2Kids', 'hourlyRate3PlusKids',
+      'yearsOfExperience', 'ageGroupsWorkedWith', 'typesOfExperience',
+      'experience', 'faithJourney', 'whyCalledToServe', 'specialSkills',
+      'city', 'state', 'postalCode', 'preferredRadius'
     ];
 
     const updates = {};

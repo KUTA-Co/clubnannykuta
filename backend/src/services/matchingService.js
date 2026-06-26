@@ -186,7 +186,10 @@ class MatchingService {
    */
   async getRequestResponses(requestId) {
     const responses = await SitterResponse.find({ requestId })
-      .populate('sitterId', 'firstName lastName profilePhoto bio age hourlyRate experience city state averageRating reviewCount')
+      .populate(
+        'sitterId',
+        'firstName lastName profilePhoto bio age hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids yearsOfExperience ageGroupsWorkedWith typesOfExperience experience faithJourney whyCalledToServe specialSkills city state averageRating reviewCount'
+      )
       .sort({ respondedAt: -1 });
 
     // Attach each sitter's recent reviews so the family can read them on the response card
