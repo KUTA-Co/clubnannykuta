@@ -74,13 +74,13 @@ const baseTemplate = (content) => `<!DOCTYPE html>
       font-family: 'Cinzel', serif;
       font-size: 28px;
       font-weight: 600;
-      color: #FFFFFF;
+      color: #8BA99E !important;
       text-decoration: none;
       letter-spacing: 1px;
     }
 
     .logo span {
-      color: #8BA99E;
+      color: #8BA99E !important;
     }
 
     .email-body {
@@ -283,7 +283,7 @@ const baseTemplate = (content) => `<!DOCTYPE html>
   <div class="email-wrapper">
     <div class="email-container">
       <div class="email-header">
-        <a href="${APP_URL}" class="logo">CLUB <span>NANNY</span></a>
+        <a href="${APP_URL}" class="logo" style="color: #8BA99E !important; text-decoration: none;">CLUB <span style="color: #8BA99E !important;">NANNY</span></a>
       </div>
       ${content}
       <div class="email-footer">
