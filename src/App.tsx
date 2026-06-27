@@ -58,7 +58,6 @@ const SitterBookings = lazy(() => import("./pages/sitting/sitter/Bookings"));
 
 // Club Nanny - Family Sitter Dashboard
 import FamilyDashboardLayout from "./components/sitting/FamilyDashboardLayout";
-const SittingFamilyDashboard = lazy(() => import("./pages/sitting/family/Dashboard"));
 const SittingFamilyProfile = lazy(() => import("./pages/sitting/family/Profile"));
 const SittingFamilyCreateRequest = lazy(() => import("./pages/sitting/family/CreateRequest"));
 const SittingFamilyRequests = lazy(() => import("./pages/sitting/family/Requests"));
@@ -168,7 +167,7 @@ const App = () => {
                   </SittingProtectedRoute>
                 }
               >
-                <Route index element={<SittingFamilyDashboard />} />
+                <Route index element={<Navigate to="/sitting/family/requests" replace />} />
                 <Route path="profile" element={<SittingFamilyProfile />} />
                 <Route path="request" element={<SittingFamilyCreateRequest />} />
                 <Route path="requests" element={<SittingFamilyRequests />} />

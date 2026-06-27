@@ -31,7 +31,7 @@ export function SittingProtectedRoute({ children, role }: SittingProtectedRouteP
 
   if (role && user?.role !== role) {
     const home =
-      user?.role === "sitter" ? "/sitting/sitter" : user?.role === "family" ? "/sitting/family" : "/";
+      user?.role === "sitter" ? "/sitting/sitter/jobs" : user?.role === "family" ? "/sitting/family/requests" : "/";
     return <Navigate to={home} replace />;
   }
 

@@ -275,9 +275,9 @@ export default function SitterRegistration() {
         login(result.token, result.user);
         toast({
           title: "Application Submitted!",
-          description: "Welcome to Club Nanny. Redirecting to your dashboard...",
+          description: "Welcome to Club Nanny. Redirecting to jobs...",
         });
-        navigate('/sitting/sitter');
+        navigate('/sitting/sitter/jobs');
       } else {
         toast({
           title: "Registration Error",

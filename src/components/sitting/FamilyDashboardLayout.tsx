@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PushNotificationPrompt } from "@/components/sitting/PushNotificationPrompt";
 import { NotificationBell } from "@/components/NotificationBell";
 import {
-  LayoutDashboard,
   Home,
   User,
   PlusCircle,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { path: "/sitting/family", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { path: "/sitting/family/profile", label: "My Household", icon: Home },
   { path: "/sitting/family/request", label: "New Request", icon: PlusCircle },
   { path: "/sitting/family/requests", label: "My Requests", icon: List },
@@ -23,7 +21,6 @@ const navItems = [
 
 // Mobile bottom nav items
 const mobileNavItems = [
-  { path: "/sitting/family", label: "Home", icon: LayoutDashboard, exact: true },
   { path: "/sitting/family/requests", label: "Requests", icon: List },
   { path: "/sitting/family/request", label: "Post", icon: PlusCircle, isCenter: true },
   { path: "/sitting/family/bookings", label: "Bookings", icon: Clock },
@@ -57,7 +54,7 @@ export function FamilyDashboardLayout() {
             <div className="absolute top-3 right-3">
               <NotificationBell color="white" />
             </div>
-            <Link to="/sitting/family" className="flex items-center justify-center">
+            <Link to="/sitting/family/requests" className="flex items-center justify-center">
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-12" />
             </Link>
             <p className="text-xs text-white/60 mt-2 text-center">Family Dashboard</p>
@@ -121,7 +118,7 @@ export function FamilyDashboardLayout() {
         {/* Mobile Header - Clean white */}
         <header className="px-4 pt-3 pb-3 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between gap-3">
-            <Link to="/sitting/family" className="shrink-0">
+            <Link to="/sitting/family/requests" className="shrink-0">
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
             </Link>
 

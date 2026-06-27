@@ -221,8 +221,8 @@ export default function RegistrationComplete() {
                 <GlassButton to="/sitting/family/request" variant="sage" size="lg" className="w-full justify-center">
                   Post a Request
                 </GlassButton>
-                <GlassButton to="/sitting/family" variant="outline" size="lg" className="w-full justify-center">
-                  Go to Dashboard
+                <GlassButton to="/sitting/family/requests" variant="outline" size="lg" className="w-full justify-center">
+                  Go to Requests
                 </GlassButton>
               </div>
             </div>

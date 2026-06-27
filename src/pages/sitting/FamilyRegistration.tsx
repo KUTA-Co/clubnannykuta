@@ -187,9 +187,9 @@ export default function FamilyRegistration() {
         login(result.token, result.user);
         toast({
           title: "Welcome to Club Nanny!",
-          description: "Your membership is active. Redirecting to your dashboard...",
+          description: "Your membership is active. Redirecting to your requests...",
         });
-        navigate('/sitting/family');
+        navigate('/sitting/family/requests');
       } else {
         toast({
           title: "Registration Error",
