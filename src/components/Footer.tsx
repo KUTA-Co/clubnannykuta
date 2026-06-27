@@ -81,8 +81,8 @@ export function Footer() {
                 >
                   Download the App
                 </DownloadAppButton>
-                <span className="text-[10px] font-medium uppercase tracking-wide text-white/40">
-                  For Sitter Services
+                <span className="text-[10px] font-bold text-white/60 md:text-xs">
+                  Note: The App Download is only required for SITTER SERVICES
                 </span>
               </div>
             </div>
