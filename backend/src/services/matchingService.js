@@ -141,9 +141,12 @@ class MatchingService {
     };
 
     const s1 = toMinutes(start1);
-    const e1 = toMinutes(end1);
+    let e1 = toMinutes(end1);
     const s2 = toMinutes(start2);
-    const e2 = toMinutes(end2);
+    let e2 = toMinutes(end2);
+
+    if (e1 <= s1) e1 += 24 * 60;
+    if (e2 <= s2) e2 += 24 * 60;
 
     // Two ranges overlap if: start1 < end2 AND end1 > start2
     return s1 < e2 && e1 > s2;
@@ -162,7 +165,11 @@ class MatchingService {
       return hours * 60 + minutes;
     };
 
-    const minutes = Math.max(0, toMinutes(request.endTime) - toMinutes(request.startTime));
+    const startMinutes = toMinutes(request.startTime);
+    let endMinutes = toMinutes(request.endTime);
+    if (endMinutes <= startMinutes) endMinutes += 24 * 60;
+
+    const minutes = Math.max(0, endMinutes - startMinutes);
     const hours = minutes / 60;
 
     const n = request.numberOfChildren;

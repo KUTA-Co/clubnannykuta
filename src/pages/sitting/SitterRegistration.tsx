@@ -228,7 +228,7 @@ export default function SitterRegistration() {
         hourlyRate1Kid: data.hourlyRate1Kid,
         hourlyRate2Kids: data.hourlyRate2Kids,
         hourlyRate3PlusKids: data.hourlyRate3PlusKids,
-        bio: data.experienceDescription,
+        bio: "",
       };
 
       // Production: pay-first — store the form data, create a Stripe checkout, redirect.

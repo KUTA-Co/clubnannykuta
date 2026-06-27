@@ -40,6 +40,17 @@ function parseDateTime(dateValue, timeValue) {
   return new Date(year, month - 1, day, hours, minutes);
 }
 
+function parseRequestDateTimes(dateValue, startTime, endTime) {
+  const startDateTime = parseDateTime(dateValue, startTime);
+  const endDateTime = parseDateTime(dateValue, endTime);
+
+  if (startDateTime && endDateTime && endDateTime <= startDateTime) {
+    endDateTime.setDate(endDateTime.getDate() + 1);
+  }
+
+  return { startDateTime, endDateTime };
+}
+
 function validateBookingRequestInput({
   date,
   startTime,
@@ -58,15 +69,10 @@ function validateBookingRequestInput({
     return 'Address, city, state, and ZIP code are required';
   }
 
-  const startDateTime = parseDateTime(date, startTime);
-  const endDateTime = parseDateTime(date, endTime);
+  const { startDateTime, endDateTime } = parseRequestDateTimes(date, startTime, endTime);
 
   if (!startDateTime || !endDateTime) {
     return 'Please enter a valid date, start time, and end time';
-  }
-
-  if (endDateTime <= startDateTime) {
-    return 'End time must be after start time';
   }
 
   if (startDateTime < new Date()) {

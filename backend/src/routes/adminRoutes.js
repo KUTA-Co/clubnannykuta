@@ -216,6 +216,34 @@ router.get('/applications/family/:id', async (req, res) => {
   }
 });
 
+// Resend family application confirmation email
+router.post('/applications/family/:id/send-confirmation', async (req, res) => {
+  try {
+    const application = await FamilyApplication.findById(req.params.id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    const result = await emailService.sendFamilyApplicationConfirmation(application.toObject());
+
+    res.json({
+      success: Boolean(result?.success),
+      message: result?.success ? 'Confirmation email sent' : 'Failed to send confirmation email',
+      result
+    });
+  } catch (error) {
+    console.error('Resend family confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send confirmation email'
+    });
+  }
+});
+
 // Update family application status
 router.patch('/applications/family/:id', async (req, res) => {
   try {
@@ -417,6 +445,34 @@ router.get('/applications/nanny/:id', async (req, res) => {
       success: false,
       message: 'Failed to fetch application',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Resend nanny application confirmation email
+router.post('/applications/nanny/:id/send-confirmation', async (req, res) => {
+  try {
+    const application = await NannyApplication.findById(req.params.id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Application not found'
+      });
+    }
+
+    const result = await emailService.sendNannyApplicationConfirmation(application.toObject());
+
+    res.json({
+      success: Boolean(result?.success),
+      message: result?.success ? 'Confirmation email sent' : 'Failed to send confirmation email',
+      result
+    });
+  } catch (error) {
+    console.error('Resend nanny confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send confirmation email'
     });
   }
 });

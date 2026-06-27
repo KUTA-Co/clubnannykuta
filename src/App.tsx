@@ -51,7 +51,6 @@ const SittingRegistrationComplete = lazy(() => import("./pages/sitting/Registrat
 
 // Club Nanny - Sitter Dashboard
 import SitterDashboardLayout from "./components/sitting/SitterDashboardLayout";
-const SitterDashboard = lazy(() => import("./pages/sitting/sitter/Dashboard"));
 const SitterProfile = lazy(() => import("./pages/sitting/sitter/Profile"));
 const SitterJobs = lazy(() => import("./pages/sitting/sitter/Jobs"));
 const SitterJobDetail = lazy(() => import("./pages/sitting/sitter/JobDetail"));
@@ -152,9 +151,9 @@ const App = () => {
                   </SittingProtectedRoute>
                 }
               >
-                <Route index element={<SitterDashboard />} />
+                <Route index element={<Navigate to="/sitting/sitter/jobs" replace />} />
                 <Route path="profile" element={<SitterProfile />} />
-                <Route path="availability" element={<Navigate to="/sitting/sitter" replace />} />
+                <Route path="availability" element={<Navigate to="/sitting/sitter/jobs" replace />} />
                 <Route path="jobs" element={<SitterJobs />} />
                 <Route path="jobs/:id" element={<SitterJobDetail />} />
                 <Route path="bookings" element={<SitterBookings />} />

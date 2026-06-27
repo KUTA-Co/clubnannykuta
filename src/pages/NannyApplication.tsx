@@ -20,6 +20,27 @@ const steps = [
   { id: 4, name: "Availability", icon: Calendar },
 ];
 
+const getMaxNannyBirthDate = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 18);
+  return date.toISOString().slice(0, 10);
+};
+
+const isAtLeast18 = (dateOfBirth: string) => {
+  if (!dateOfBirth) return false;
+  const [year, month, day] = dateOfBirth.split('-').map(Number);
+  if ([year, month, day].some((part) => Number.isNaN(part))) return false;
+
+  const dob = new Date(year, month - 1, day);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= 18;
+};
+
 export default function NannyApplication() {
   const navigate = useNavigate();
   const runningAsApp = isStandaloneApp();
@@ -71,6 +92,13 @@ export default function NannyApplication() {
   };
 
   const handleSubmit = async () => {
+    if (!isAtLeast18(formData.dateOfBirth)) {
+      alert('Nannies must be at least 18 years old to apply.');
+      setCurrentStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -281,10 +309,14 @@ export default function NannyApplication() {
                     <Label className="text-sm font-medium text-[#4A4A4A]">Date of Birth *</Label>
                     <Input
                       type="date"
+                      max={getMaxNannyBirthDate()}
                       value={formData.dateOfBirth}
                       onChange={(e) => handleChange("dateOfBirth", e.target.value)}
                       className="h-12 rounded-xl border-gray-200 focus:border-[#8BA99E] focus:ring-[#8BA99E]"
                     />
+                    {formData.dateOfBirth && !isAtLeast18(formData.dateOfBirth) && (
+                      <p className="text-sm text-red-500">Nannies must be at least 18 years old.</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-[#4A4A4A]">School or Training Program *</Label>

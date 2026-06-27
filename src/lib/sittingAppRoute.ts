@@ -27,7 +27,7 @@ export async function resolveSittingAppRoute(token: string | null) {
       // with the website, so an admin token can exist on the same device; never
       // auto-launch that token into the admin dashboard from the app icon.
       if (role === "admin") target = "/sitting/login";
-      else if (data.hasSitterProfile) target = "/sitting/sitter";
+      else if (data.hasSitterProfile) target = "/sitting/sitter/jobs";
       else if (data.hasFamilyProfile) target = "/sitting/family";
     }
   } catch {

@@ -9,7 +9,8 @@ import {
   PlusCircle,
   List,
   Clock,
-  LogOut
+  LogOut,
+  ExternalLink
 } from "lucide-react";
 
 const navItems = [
@@ -86,6 +87,13 @@ export function FamilyDashboardLayout() {
                 );
               })}
             </ul>
+            <a
+              href="/program"
+              className="mt-4 flex items-center gap-3 rounded-xl px-4 py-3 text-white/80 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <ExternalLink className="w-5 h-5" />
+              <span className="text-sm font-medium">Visit website to read more</span>
+            </a>
           </nav>
 
           {/* User Info & Actions */}
@@ -136,6 +144,13 @@ export function FamilyDashboardLayout() {
         {/* Main Content */}
         <main className="flex-1 px-4 pt-4 pb-28 overflow-auto bg-[#FAF9F6]">
           <PushNotificationPrompt />
+          <a
+            href="/program"
+            className="mb-4 flex items-center justify-center gap-2 rounded-full border border-[#F5D5E5] bg-white px-4 py-2 text-xs font-semibold text-[#9B5A80]"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Visit website to read more
+          </a>
           <Outlet />
         </main>
 

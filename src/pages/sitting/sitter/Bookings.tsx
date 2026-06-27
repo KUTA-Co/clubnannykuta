@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, Users, Phone, Mail, Check, X, Loader2, List, CalendarDays, DollarSign, Star } from "lucide-react";
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
+import { formatDateOnly, isSameDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -203,7 +204,7 @@ export default function SitterBookings() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return formatDateOnly(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -212,9 +213,7 @@ export default function SitterBookings() {
   };
 
   const isToday = (dateStr: string) => {
-    const today = new Date();
-    const date = new Date(dateStr);
-    return today.toDateString() === date.toDateString();
+    return isSameDateOnly(dateStr, new Date());
   };
 
   if (loading) {

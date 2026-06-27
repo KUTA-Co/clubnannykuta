@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Briefcase, Clock, Calendar, ChevronRight, Star, MapPin } from "lucide-react";
+import { formatDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -75,7 +76,7 @@ export default function SitterDashboard() {
   };
 
   const formatShort = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    formatDateOnly(dateStr, { month: 'short', day: 'numeric' });
 
   if (loading) {
     return (

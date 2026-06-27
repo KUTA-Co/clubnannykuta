@@ -127,6 +127,7 @@ export default function NannyApplicationDetail() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
 
   // Background check state
@@ -288,6 +289,26 @@ export default function NannyApplicationDetail() {
       });
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const sendConfirmationEmail = async () => {
+    setIsSendingConfirmation(true);
+    try {
+      const response = await authFetch(`/api/admin/applications/nanny/${id}/send-confirmation`, {
+        method: "POST"
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast({ title: "Confirmation Sent", description: `Confirmation email sent to ${application?.fullName}` });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
+    } finally {
+      setIsSendingConfirmation(false);
     }
   };
 
@@ -989,6 +1010,15 @@ export default function NannyApplicationDetail() {
             </div>
             <div className="p-6">
               <div className="space-y-3">
+                <Button
+                  onClick={sendConfirmationEmail}
+                  disabled={isSendingConfirmation}
+                  variant="outline"
+                  className="w-full justify-start h-11 border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10"
+                >
+                  {isSendingConfirmation ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                  Send Confirmation Email
+                </Button>
                 <Button
                   onClick={() => updateStatus("reviewing")}
                   disabled={isSaving || application.status === "reviewing"}

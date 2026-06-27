@@ -1169,6 +1169,91 @@ class EmailService {
     };
   }
 
+  async sendSittingFamilyApplicationSubmittedToAdmin(family) {
+    const name = family.householdName || family.email;
+    const adminUrl = `${APP_URL}/admin/sitting-families`;
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <div style="margin-bottom: 20px;">
+          <span class="badge badge-new">New Sitter Family</span>
+        </div>
+        <h1 class="greeting">New sitter-family application has been submitted!</h1>
+        <p class="message">
+          A family has completed payment and registered for Club Nanny sitter services.
+        </p>
+
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">Household</span>
+            <span class="info-value">${name}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value"><a href="mailto:${family.email}" style="color: #8BA99E;">${family.email}</a></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Location</span>
+            <span class="info-value">${[family.city, family.state].filter(Boolean).join(', ') || 'Not provided'}</span>
+          </div>
+        </div>
+
+        <center>
+          <a href="${adminUrl}" class="cta-button">View Sitter Families</a>
+        </center>
+      </div>
+    `);
+
+    return this.send({
+      to: SUPPORT_EMAIL,
+      subject: 'New sitter-family application has been submitted!',
+      html
+    });
+  }
+
+  async sendSittingFamilyApplicationSubmittedToApplicant(family) {
+    const name = family.householdName || 'there';
+    const appUrl = `${APP_URL}/sitting/login`;
+
+    const html = baseTemplate(`
+      <div class="email-body">
+        <h1 class="greeting">Application Submitted</h1>
+        <p class="message">
+          Dear ${name},
+        </p>
+        <p class="message">
+          Your Club Nanny family application has been submitted and your account is ready for sitter services.
+        </p>
+
+        <div class="highlight-box">
+          <h3>What's Next?</h3>
+          <p>You can log in to the Club Nanny app to create requests and connect with approved sitters.</p>
+        </div>
+
+        <center>
+          <a href="${appUrl}" class="cta-button">Open Club Nanny App</a>
+        </center>
+      </div>
+    `);
+
+    return this.send({
+      to: family.email,
+      subject: 'Your Club Nanny Family Application Has Been Submitted',
+      html
+    });
+  }
+
+  async handleSittingFamilyApplicationSubmitted(family) {
+    const adminResult = await this.sendSittingFamilyApplicationSubmittedToAdmin(family);
+    const applicantResult = await this.sendSittingFamilyApplicationSubmittedToApplicant(family);
+
+    return {
+      admin: adminResult,
+      applicant: applicantResult,
+      success: adminResult.success && applicantResult.success
+    };
+  }
+
   async sendPlacementFeeConfirmation(data) {
     const { email, name, feeType, amount } = data;
     const feeTypeLabel = feeType === 'placement_local' ? 'Local Placement' : 'Live-In Placement';

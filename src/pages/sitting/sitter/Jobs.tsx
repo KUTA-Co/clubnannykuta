@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, Users, AlertCircle, Check, X, Loader2 } from "lucide-react";
+import { formatDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -151,7 +152,7 @@ export default function SitterJobs() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return formatDateOnly(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric'

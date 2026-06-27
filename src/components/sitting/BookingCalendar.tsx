@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, MapPin, User } from "lucide-react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { parseDateOnly } from "@/lib/dateOnly";
 
 export interface CalendarBooking {
   _id: string;
@@ -28,12 +29,7 @@ interface BookingCalendarProps {
 }
 
 const parseBookingDate = (value: string) => {
-  // API returns ISO strings; parseISO handles them, fallback to Date constructor
-  try {
-    return parseISO(value);
-  } catch {
-    return new Date(value);
-  }
+  return parseDateOnly(value) || new Date(value);
 };
 
 export function BookingCalendar({ bookings, viewerRole }: BookingCalendarProps) {

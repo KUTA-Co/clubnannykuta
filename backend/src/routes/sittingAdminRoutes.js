@@ -4,10 +4,12 @@ import {
   SitterProfile,
   SittingFamilyProfile,
   BookingRequest,
-  SitterResponse
+  SitterResponse,
+  Review
 } from '../models/index.js';
 import stripeService from '../services/stripeService.js';
 import emailService from '../services/emailService.js';
+import matchingService from '../services/matchingService.js';
 
 const router = express.Router();
 
@@ -127,6 +129,111 @@ router.get('/sitters/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get sitter'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/sitting/sitters/:id/send-confirmation
+ * Resend sitter application confirmation email
+ */
+router.post('/sitters/:id/send-confirmation', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    const result = await emailService.sendSitterApplicationSubmittedToApplicant(sitter.toObject());
+
+    res.json({
+      success: Boolean(result?.success),
+      message: result?.success ? 'Confirmation email sent' : 'Failed to send confirmation email',
+      result
+    });
+  } catch (error) {
+    console.error('Resend sitter confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send confirmation email'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/sitting/sitters/:id/reviews
+ * Get reviews for a sitter
+ */
+router.get('/sitters/:id/reviews', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    const reviews = await Review.find({ sitterId: sitter._id })
+      .populate('familyId', 'householdName email')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      reviews
+    });
+  } catch (error) {
+    console.error('Get sitter reviews error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get reviews'
+    });
+  }
+});
+
+/**
+ * DELETE /api/admin/sitting/sitters/:id/reviews/:reviewId
+ * Delete a sitter review and recompute the sitter rating
+ */
+router.delete('/sitters/:id/reviews/:reviewId', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    const review = await Review.findOneAndDelete({
+      _id: req.params.reviewId,
+      sitterId: sitter._id
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Review not found'
+      });
+    }
+
+    await matchingService.recomputeSitterRating(sitter._id);
+
+    res.json({
+      success: true,
+      message: 'Review deleted'
+    });
+  } catch (error) {
+    console.error('Delete sitter review error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete review'
     });
   }
 });
@@ -422,6 +529,37 @@ router.get('/families/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get family'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/sitting/families/:id/send-confirmation
+ * Resend sitting family application confirmation email
+ */
+router.post('/families/:id/send-confirmation', async (req, res) => {
+  try {
+    const family = await SittingFamilyProfile.findById(req.params.id);
+
+    if (!family) {
+      return res.status(404).json({
+        success: false,
+        message: 'Family not found'
+      });
+    }
+
+    const result = await emailService.sendSittingFamilyApplicationSubmittedToApplicant(family.toObject());
+
+    res.json({
+      success: Boolean(result?.success),
+      message: result?.success ? 'Confirmation email sent' : 'Failed to send confirmation email',
+      result
+    });
+  } catch (error) {
+    console.error('Resend sitting family confirmation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send confirmation email'
     });
   }
 });

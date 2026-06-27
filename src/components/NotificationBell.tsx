@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthFetch } from "@/contexts/AuthContext";
 import { Bell, Check } from "lucide-react";
@@ -24,12 +24,75 @@ export function NotificationBell({ color = "#C77DA3" }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
+  const [popup, setPopup] = useState<NotificationItem | null>(null);
+  const unreadRef = useRef(0);
+  const initializedRef = useRef(false);
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextCtor) return;
+
+      const context = new AudioContextCtor();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, context.currentTime);
+      gain.gain.setValueAtTime(0.001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.28);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.3);
+      setTimeout(() => context.close().catch(() => undefined), 500);
+    } catch {
+      // Some browsers block audio until the user interacts with the page.
+    }
+  };
+
+  const showLocalNotification = (notification: NotificationItem) => {
+    setPopup(notification);
+    playNotificationSound();
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        const browserNotification = new Notification(notification.title || "Club Nanny", {
+          body: notification.body || "You have a new notification",
+          icon: "/icon-192.png"
+        });
+        browserNotification.onclick = () => {
+          window.focus();
+          if (notification.link) navigate(notification.link);
+          browserNotification.close();
+        };
+      } catch {
+        // Browser notifications are best-effort.
+      }
+    }
+
+    window.setTimeout(() => setPopup((current) => current?._id === notification._id ? null : current), 6500);
+  };
 
   const fetchCount = async () => {
     try {
       const res = await authFetch("/api/notifications/unread-count");
       const data = await res.json();
-      if (data.success) setUnread(data.count);
+      if (data.success) {
+        const nextCount = data.count || 0;
+        const previousCount = unreadRef.current;
+        setUnread(nextCount);
+        unreadRef.current = nextCount;
+
+        if (initializedRef.current && nextCount > previousCount) {
+          const listRes = await authFetch("/api/notifications?limit=1");
+          const listData = await listRes.json();
+          const latest = listData.success ? listData.notifications?.[0] : null;
+          if (latest) showLocalNotification(latest);
+        }
+
+        initializedRef.current = true;
+      }
     } catch {
       // ignore
     }
@@ -47,7 +110,7 @@ export function NotificationBell({ color = "#C77DA3" }: NotificationBellProps) {
 
   useEffect(() => {
     fetchCount();
-    const t = setInterval(fetchCount, 60000);
+    const t = setInterval(fetchCount, 15000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -142,6 +205,24 @@ export function NotificationBell({ color = "#C77DA3" }: NotificationBellProps) {
             </div>
           </div>
         </>
+      )}
+
+      {popup && (
+        <button
+          type="button"
+          onClick={() => handleItem(popup)}
+          className="fixed right-4 top-20 z-[60] w-80 max-w-[90vw] rounded-2xl border border-[#F5D5E5] bg-white p-4 text-left shadow-xl"
+        >
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-full p-2" style={{ backgroundColor: "#F5D5E5" }}>
+              <Bell className="h-4 w-4" style={{ color }} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#4A4A4A]">{popup.title}</p>
+              {popup.body && <p className="mt-1 text-xs text-[#4A4A4A]/65">{popup.body}</p>}
+            </div>
+          </div>
+        </button>
       )}
     </>
   );

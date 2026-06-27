@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuthFetch } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Check, X, Ban, RotateCcw, Loader2, Star } from "lucide-react";
+import { ArrowLeft, Check, X, Ban, RotateCcw, Loader2, Star, Mail, Trash2 } from "lucide-react";
 
 interface Sitter {
   _id: string;
@@ -32,6 +32,17 @@ interface Sitter {
   createdAt: string;
 }
 
+interface SitterReview {
+  _id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  familyId?: {
+    householdName?: string;
+    email?: string;
+  };
+}
+
 export default function SittingSitterDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,8 +52,11 @@ export default function SittingSitterDetail() {
   const [sitter, setSitter] = useState<Sitter | null>(null);
   const [bookingStats, setBookingStats] = useState<{ _id: string; count: number }[]>([]);
   const [paymentStats, setPaymentStats] = useState<{ paidCount: number; paidAmountCents: number }>({ paidCount: 0, paidAmountCents: 0 });
+  const [reviews, setReviews] = useState<SitterReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [sendingConfirmation, setSendingConfirmation] = useState(false);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   const fetchSitter = async () => {
     setLoading(true);
@@ -54,10 +68,53 @@ export default function SittingSitterDetail() {
         setBookingStats(data.bookingStats || []);
         setPaymentStats(data.paymentStats || { paidCount: 0, paidAmountCents: 0 });
       }
+
+      const reviewsRes = await authFetch(`/api/admin/sitting/sitters/${id}/reviews`);
+      const reviewsData = await reviewsRes.json();
+      if (reviewsData.success) {
+        setReviews(reviewsData.reviews || []);
+      }
     } catch (error) {
       console.error("Fetch sitter error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendConfirmationEmail = async () => {
+    setSendingConfirmation(true);
+    try {
+      const res = await authFetch(`/api/admin/sitting/sitters/${id}/send-confirmation`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Confirmation Sent", description: `Confirmation email sent to ${sitter?.firstName}` });
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to send confirmation email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
+    } finally {
+      setSendingConfirmation(false);
+    }
+  };
+
+  const deleteReview = async (reviewId: string) => {
+    if (!confirm("Delete this review? This will update the sitter's rating.")) return;
+
+    setDeletingReviewId(reviewId);
+    try {
+      const res = await authFetch(`/api/admin/sitting/sitters/${id}/reviews/${reviewId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Review Deleted", description: "The sitter rating has been updated." });
+        fetchSitter();
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to delete review", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to delete review", variant: "destructive" });
+    } finally {
+      setDeletingReviewId(null);
     }
   };
 
@@ -109,7 +166,10 @@ export default function SittingSitterDetail() {
       ? "Applied as first month"
       : sitter.membershipFeeAmountCents
         ? "Paid, pending approval decision"
-        : undefined;
+      : undefined;
+  const visibleBio = sitter.bio && sitter.bio.trim() !== (sitter.experience || "").trim()
+    ? sitter.bio
+    : undefined;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -129,6 +189,10 @@ export default function SittingSitterDetail() {
 
       {/* Action buttons by status */}
       <div className="flex flex-wrap gap-3">
+        <Button onClick={sendConfirmationEmail} disabled={sendingConfirmation} variant="outline" className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10">
+          {sendingConfirmation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+          Send Confirmation Email
+        </Button>
         {sitter.status === "pending_approval" && (
           <>
             <Button onClick={() => doAction("approve")} disabled={acting} className="bg-green-600 hover:bg-green-700">
@@ -179,12 +243,12 @@ export default function SittingSitterDetail() {
         </div>
       </div>
 
-      {(sitter.bio || sitter.experience) && (
+      {(visibleBio || sitter.experience) && (
         <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-          {sitter.bio && (
+          {visibleBio && (
             <div>
               <h3 className="font-semibold text-[#1A1A1A] mb-1">Bio</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{sitter.bio}</p>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{visibleBio}</p>
             </div>
           )}
           {sitter.experience && (
@@ -195,6 +259,42 @@ export default function SittingSitterDetail() {
           )}
         </div>
       )}
+
+      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+        <h3 className="font-semibold text-[#1A1A1A]">Reviews</h3>
+        {reviews.length === 0 ? (
+          <p className="text-sm text-gray-500">No reviews yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <div key={review._id} className="rounded-lg border border-gray-100 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} className="w-4 h-4" style={{ color: "#C77DA3" }} fill={n <= review.rating ? "#C77DA3" : "none"} />
+                      ))}
+                      <span className="ml-2 text-xs text-gray-500">
+                        {review.familyId?.householdName || review.familyId?.email || "Family"} · {new Date(review.createdAt).toLocaleDateString("en-US")}
+                      </span>
+                    </div>
+                    {review.comment && <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{review.comment}</p>}
+                  </div>
+                  <Button
+                    onClick={() => deleteReview(review._id)}
+                    disabled={deletingReviewId === review._id}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    {deletingReviewId === review._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

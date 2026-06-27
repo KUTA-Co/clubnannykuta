@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, User, Phone, Mail, Check, Star, Loader2, List, CalendarDays, RotateCcw, X } from "lucide-react";
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
 import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
+import { formatDateOnly, isSameDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -263,7 +264,7 @@ export default function FamilyBookings() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return formatDateOnly(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -272,9 +273,7 @@ export default function FamilyBookings() {
   };
 
   const isToday = (dateStr: string) => {
-    const today = new Date();
-    const date = new Date(dateStr);
-    return today.toDateString() === date.toDateString();
+    return isSameDateOnly(dateStr, new Date());
   };
 
   if (loading) {

@@ -229,7 +229,7 @@ router.post('/complete/sitter', async (req, res) => {
       faithJourney: faithJourney || '',
       whyCalledToServe: whyCalledToServe || '',
       specialSkills: specialSkills || '',
-      bio: bio || experience || '',
+      bio: bio || '',
       hourlyRate: hourlyRate || hourlyRate1Kid || 20,
       hourlyRate1Kid: hourlyRate1Kid || hourlyRate || 20,
       hourlyRate2Kids: hourlyRate2Kids || 25,
@@ -457,6 +457,13 @@ router.post('/complete/family', async (req, res) => {
       stripeCustomerId: session.customer
     });
 
+    try {
+      const emailResult = await emailService.handleSittingFamilyApplicationSubmitted(profile.toObject());
+      console.log('Sitting family application notification emails processed:', emailResult);
+    } catch (emailError) {
+      console.error('Failed to send sitting family application notification emails:', emailError.message);
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
@@ -586,7 +593,7 @@ router.post('/register-test/sitter', async (req, res) => {
       faithJourney: faithJourney || '',
       whyCalledToServe: whyCalledToServe || '',
       specialSkills: specialSkills || '',
-      bio: bio || experience || '',
+      bio: bio || '',
       hourlyRate: hourlyRate || hourlyRate1Kid || 20,
       hourlyRate1Kid: hourlyRate1Kid || hourlyRate || 20,
       hourlyRate2Kids: hourlyRate2Kids || 25,

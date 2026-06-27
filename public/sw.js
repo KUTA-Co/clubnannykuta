@@ -1,5 +1,5 @@
 // Club Nanny Service Worker - Caching for performance + push notifications
-const CACHE_NAME = 'clubnanny-v12';
+const CACHE_NAME = 'clubnanny-v13';
 const STATIC_ASSETS = [
   '/clubnannynobg.png',
   '/favicon-32.png',

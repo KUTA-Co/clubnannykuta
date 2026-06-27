@@ -3,23 +3,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PushNotificationPrompt } from "@/components/sitting/PushNotificationPrompt";
 import { NotificationBell } from "@/components/NotificationBell";
 import {
-  LayoutDashboard,
   User,
   Briefcase,
   Clock,
-  LogOut
+  LogOut,
+  ExternalLink
 } from "lucide-react";
 
 const navItems = [
-  { path: "/sitting/sitter", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { path: "/sitting/sitter/profile", label: "My Profile", icon: User },
   { path: "/sitting/sitter/jobs", label: "Available Jobs", icon: Briefcase },
   { path: "/sitting/sitter/bookings", label: "My Bookings", icon: Clock },
+  { path: "/sitting/sitter/profile", label: "My Profile", icon: User },
 ];
 
 // Mobile bottom nav items
 const mobileNavItems = [
-  { path: "/sitting/sitter", label: "Home", icon: LayoutDashboard, exact: true },
   { path: "/sitting/sitter/jobs", label: "Jobs", icon: Briefcase },
   { path: "/sitting/sitter/bookings", label: "Bookings", icon: Clock },
   { path: "/sitting/sitter/profile", label: "Profile", icon: User },
@@ -52,7 +50,7 @@ export function SitterDashboardLayout() {
             <div className="absolute top-3 right-3">
               <NotificationBell color="white" />
             </div>
-            <Link to="/sitting/sitter" className="flex items-center justify-center">
+            <Link to="/sitting/sitter/jobs" className="flex items-center justify-center">
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-12" />
             </Link>
             <p className="text-xs text-white/60 mt-2 text-center">Sitter Dashboard</p>
@@ -82,6 +80,13 @@ export function SitterDashboardLayout() {
                 );
               })}
             </ul>
+            <a
+              href="/program"
+              className="mt-4 flex items-center gap-3 rounded-xl px-4 py-3 text-white/80 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <ExternalLink className="w-5 h-5" />
+              <span className="text-sm font-medium">Visit website to read more</span>
+            </a>
           </nav>
 
           {/* User Info & Actions */}
@@ -109,7 +114,7 @@ export function SitterDashboardLayout() {
         {/* Mobile Header - Clean white */}
         <header className="px-4 pt-3 pb-3 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between gap-3">
-            <Link to="/sitting/sitter" className="shrink-0">
+            <Link to="/sitting/sitter/jobs" className="shrink-0">
               <img src="/clubnannynobg.png" alt="Club Nanny" className="h-8" />
             </Link>
 
@@ -132,6 +137,13 @@ export function SitterDashboardLayout() {
         {/* Main Content */}
         <main className="flex-1 px-4 pt-4 pb-24 overflow-auto bg-[#FAF9F6]">
           <PushNotificationPrompt />
+          <a
+            href="/program"
+            className="mb-4 flex items-center justify-center gap-2 rounded-full border border-[#F5D5E5] bg-white px-4 py-2 text-xs font-semibold text-[#9B5A80]"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Visit website to read more
+          </a>
           <Outlet />
         </main>
 

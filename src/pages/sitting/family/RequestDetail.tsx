@@ -10,6 +10,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, MapPin, Users, User, Check, Loader2, Trash2, Star, Phone, Mail, X, Edit3, Save } from "lucide-react";
 import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
+import { formatDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const TIME_VALUE_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -116,6 +117,17 @@ function parseDateTime(dateValue: string, timeValue: string) {
   return new Date(year, month - 1, day, hours, minutes);
 }
 
+function parseRequestDateTimes(dateValue: string, startTime: string, endTime: string) {
+  const startDateTime = parseDateTime(dateValue, startTime);
+  const endDateTime = parseDateTime(dateValue, endTime);
+
+  if (startDateTime && endDateTime && endDateTime <= startDateTime) {
+    endDateTime.setDate(endDateTime.getDate() + 1);
+  }
+
+  return { startDateTime, endDateTime };
+}
+
 function valuesFromRequest(request: Request): EditRequestValues {
   return {
     date: dateInputValue(request.date),
@@ -145,6 +157,12 @@ function ProfileField({ label, value }: { label: string; value?: string | number
       <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#4A4A4A]">{value}</p>
     </div>
   );
+}
+
+function sitterBioValue(sitter: Pick<SitterResponse['sitterId'], 'bio' | 'experience'>) {
+  if (!sitter.bio) return undefined;
+  if (sitter.experience && sitter.bio.trim() === sitter.experience.trim()) return undefined;
+  return sitter.bio;
 }
 
 function RateGrid({ sitter, numberOfChildren }: { sitter: SitterResponse['sitterId']; numberOfChildren: number }) {
@@ -418,12 +436,11 @@ export default function RequestDetail() {
       return;
     }
 
-    const startDateTime = parseDateTime(editValues.date, editValues.startTime);
-    const endDateTime = parseDateTime(editValues.date, editValues.endTime);
-    if (!startDateTime || !endDateTime || endDateTime <= startDateTime) {
+    const { startDateTime, endDateTime } = parseRequestDateTimes(editValues.date, editValues.startTime, editValues.endTime);
+    if (!startDateTime || !endDateTime) {
       toast({
         title: "Invalid time",
-        description: "End time must be after start time.",
+        description: "Please choose a valid start and end time.",
         variant: "destructive"
       });
       return;
@@ -484,7 +501,7 @@ export default function RequestDetail() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return formatDateOnly(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -577,7 +594,7 @@ export default function RequestDetail() {
               <section>
                 <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">About & Experience</h3>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <ProfileField label="Bio" value={selectedResponse.sitterId.bio} />
+                  <ProfileField label="Bio" value={sitterBioValue(selectedResponse.sitterId)} />
                   <ProfileField label="Childcare Experience" value={selectedResponse.sitterId.experience} />
                   <ProfileField label="Years of Experience" value={selectedResponse.sitterId.yearsOfExperience} />
                   <ProfileField label="Age Groups Worked With" value={selectedResponse.sitterId.ageGroupsWorkedWith} />
@@ -1022,8 +1039,8 @@ export default function RequestDetail() {
                               <RateGrid sitter={response.sitterId} numberOfChildren={request.numberOfChildren} />
                             </div>
 
-                            {response.sitterId.bio && (
-                              <p className="text-sm text-[#4A4A4A]/70 mb-3">{response.sitterId.bio}</p>
+                            {sitterBioValue(response.sitterId) && (
+                              <p className="text-sm text-[#4A4A4A]/70 mb-3">{sitterBioValue(response.sitterId)}</p>
                             )}
 
                             {response.sitterId.experience && (

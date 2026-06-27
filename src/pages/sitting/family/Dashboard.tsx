@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlusCircle, Clock, Calendar, ArrowRight, Users, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dateOnly";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -103,7 +104,7 @@ export default function FamilyDashboard() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return formatDateOnly(dateStr, {
       weekday: 'short',
       month: 'short',
       day: 'numeric'

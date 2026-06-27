@@ -29,6 +29,17 @@ const parseDateTime = (dateValue: string, timeValue: string) => {
   return new Date(year, month - 1, day, hours, minutes);
 };
 
+const parseRequestDateTimes = (dateValue: string, startTime: string, endTime: string) => {
+  const startDateTime = parseDateTime(dateValue, startTime);
+  const endDateTime = parseDateTime(dateValue, endTime);
+
+  if (startDateTime && endDateTime && endDateTime <= startDateTime) {
+    endDateTime.setDate(endDateTime.getDate() + 1);
+  }
+
+  return { startDateTime, endDateTime };
+};
+
 const formatDateInputValue = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -54,16 +65,7 @@ const requestSchema = z.object({
   notes: z.string().optional(),
   specialInstructions: z.string().optional()
 }).superRefine((data, ctx) => {
-  const startDateTime = parseDateTime(data.date, data.startTime);
-  const endDateTime = parseDateTime(data.date, data.endTime);
-
-  if (startDateTime && endDateTime && endDateTime <= startDateTime) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "End time must be after start time",
-      path: ["endTime"]
-    });
-  }
+  const { startDateTime } = parseRequestDateTimes(data.date, data.startTime, data.endTime);
 
   if (startDateTime && startDateTime < new Date()) {
     ctx.addIssue({

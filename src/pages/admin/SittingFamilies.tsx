@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuthFetch } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Home, UserCheck, Clock, MapPin } from "lucide-react";
+import { Search, Filter, Home, UserCheck, MapPin, Mail, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SittingFamily {
   _id: string;
@@ -25,8 +26,10 @@ const statusStyles: Record<string, { bg: string; color: string }> = {
 
 export default function SittingFamilies() {
   const authFetch = useAuthFetch();
+  const { toast } = useToast();
   const [families, setFamilies] = useState<SittingFamily[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sendingConfirmationId, setSendingConfirmationId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0 });
@@ -74,6 +77,23 @@ export default function SittingFamilies() {
     day: "numeric",
     year: "numeric"
   });
+
+  const sendConfirmationEmail = async (family: SittingFamily) => {
+    setSendingConfirmationId(family._id);
+    try {
+      const res = await authFetch(`/api/admin/sitting/families/${family._id}/send-confirmation`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Confirmation Sent", description: `Confirmation email sent to ${family.householdName}` });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
+    } finally {
+      setSendingConfirmationId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -165,6 +185,17 @@ export default function SittingFamilies() {
                   <span className="px-3 py-1 rounded-full text-xs font-medium capitalize bg-[#F5D5E5] text-[#9B5A80]">
                     {family.membershipStatus}
                   </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => sendConfirmationEmail(family)}
+                    disabled={sendingConfirmationId === family._id}
+                    className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10"
+                  >
+                    {sendingConfirmationId === family._id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                    Send Confirmation Email
+                  </Button>
                 </div>
               </div>
             );

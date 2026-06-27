@@ -6,6 +6,21 @@ import { isValidEmail, isValidPhone } from '../middleware/sanitize.js';
 
 const router = express.Router();
 
+function isAtLeastAge(dateOfBirth, minimumAge) {
+  if (!dateOfBirth) return false;
+  const [year, month, day] = String(dateOfBirth).slice(0, 10).split('-').map(Number);
+  if ([year, month, day].some((part) => Number.isNaN(part))) return false;
+
+  const dob = new Date(year, month - 1, day);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= minimumAge;
+}
+
 // ============================================
 // CONTACT FORM
 // ============================================
@@ -105,6 +120,13 @@ router.post('/family-application', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid phone number format'
+      });
+    }
+
+    if (!isAtLeastAge(data.dateOfBirth || data.date_of_birth, 18)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nannies must be at least 18 years old'
       });
     }
 
@@ -384,6 +406,13 @@ router.post('/complete-application', async (req, res) => {
         return res.status(400).json({
           success: false,
           error: 'Invalid email format'
+        });
+      }
+
+      if (!isAtLeastAge(formData.dateOfBirth || formData.date_of_birth, 18)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nannies must be at least 18 years old'
         });
       }
 
