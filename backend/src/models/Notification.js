@@ -30,6 +30,13 @@ const notificationSchema = new mongoose.Schema({
     trim: true
   },
 
+  // Prevent the same event from creating duplicate in-app rows when a request
+  // is retried or multiple async paths fire close together.
+  dedupeKey: {
+    type: String,
+    trim: true
+  },
+
   read: {
     type: Boolean,
     default: false
@@ -40,6 +47,7 @@ const notificationSchema = new mongoose.Schema({
 
 // Fast unread/recent lookups per user
 notificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, dedupeKey: 1 }, { unique: true, sparse: true });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 

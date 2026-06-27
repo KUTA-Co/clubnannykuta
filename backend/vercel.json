@@ -5,6 +5,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/review-reminders",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",

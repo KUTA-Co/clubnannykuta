@@ -34,6 +34,20 @@ router.post('/subscribe', async (req, res) => {
       }
     }
 
+    const userAgent = req.headers['user-agent'] || '';
+
+    if (userId && userAgent) {
+      await PushSubscription.updateMany(
+        {
+          userId,
+          userAgent,
+          endpoint: { $ne: subscription.endpoint },
+          isActive: true,
+        },
+        { isActive: false }
+      );
+    }
+
     // Upsert subscription
     await PushSubscription.findOneAndUpdate(
       { endpoint: subscription.endpoint },
@@ -44,7 +58,7 @@ router.post('/subscribe', async (req, res) => {
           auth: subscription.keys.auth,
         },
         userId,
-        userAgent: req.headers['user-agent'],
+        userAgent,
         isActive: true,
       },
       { upsert: true, new: true }

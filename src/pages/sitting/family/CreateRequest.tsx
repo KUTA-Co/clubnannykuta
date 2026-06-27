@@ -102,6 +102,9 @@ type BookingRequestPayload = {
   date: string;
   startTime: string;
   endTime: string;
+  startAt?: string;
+  endAt?: string;
+  timeZone?: string;
   numberOfChildren: number;
   notes?: string;
   specialInstructions?: string;
@@ -232,10 +235,14 @@ export default function CreateRequest() {
         return;
       }
 
+      const { startDateTime, endDateTime } = parseRequestDateTimes(data.date, data.startTime, data.endTime);
       const requestData: BookingRequestPayload = {
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
+        startAt: startDateTime?.toISOString(),
+        endAt: endDateTime?.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         numberOfChildren: data.numberOfChildren,
         notes: data.notes,
         specialInstructions: data.specialInstructions

@@ -13,6 +13,7 @@ import stripeRoutes from './routes/stripeRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import legacyImportRoutes from './routes/legacyImportRoutes.js';
+import cronRoutes from './routes/cronRoutes.js';
 
 // Club Nanny sitter-side routes
 import sitterRoutes from './routes/sitterRoutes.js';
@@ -197,6 +198,9 @@ app.use('/api/push', pushRoutes);
 
 // In-app notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Scheduled maintenance/notification routes
+app.use('/api/cron', cronRoutes);
 
 // Club Nanny sitter-side routes
 app.use('/api/sitting/auth', sittingAuthRoutes);

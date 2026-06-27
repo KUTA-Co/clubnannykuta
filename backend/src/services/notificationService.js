@@ -7,10 +7,26 @@ import { areaMatchConditions } from './matchingService.js';
  * Notification service for Club Nanny sitter-side booking events.
  *
  * Every method fans an event out to BOTH email (Mailgun) and web-push.
- * All delivery is fire-and-forget: a failure in one channel never throws
- * back to the caller, so an API request is never broken by a flaky email
- * or an unconfigured VAPID key (pushService no-ops when VAPID is unset).
+ * A failure in one channel never throws back to the caller, so an API request
+ * is never broken by a flaky email or an unconfigured VAPID key.
  */
+
+function formatJobDate(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'the booking date';
+
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(date);
+}
+
+function formatTimeRange(request) {
+  return `${request.startTime}-${request.endTime}`;
+}
 
 async function safePush(userId, payload) {
   if (!userId) return;
@@ -29,9 +45,28 @@ async function safeEmail(sendPromise) {
   }
 }
 
-async function createInApp(userId, { type, title, body, link }) {
+async function createInApp(userId, { type, title, body, link, dedupeKey }) {
   if (!userId) return;
   try {
+    if (dedupeKey) {
+      await Notification.findOneAndUpdate(
+        { userId, dedupeKey },
+        {
+          $setOnInsert: {
+            userId,
+            type,
+            title,
+            body,
+            link,
+            dedupeKey,
+            read: false
+          }
+        },
+        { upsert: true, new: true }
+      );
+      return;
+    }
+
     await Notification.create({ userId, type, title, body, link });
   } catch (error) {
     console.error('In-app notification failed:', error.message);
@@ -49,6 +84,8 @@ async function notifyNewJob(request) {
     if (areaOr) sitterQuery.$or = areaOr;
 
     const sitters = await SitterProfile.find(sitterQuery);
+    const dateLabel = formatJobDate(request.date);
+    const body = `${dateLabel} • ${request.city}, ${request.state} • ${formatTimeRange(request)}`;
 
     await Promise.all(sitters.map(async (sitter) => {
       await safeEmail(emailService.sendNewJobAlert({
@@ -65,7 +102,7 @@ async function notifyNewJob(request) {
 
       await safePush(sitter.userId, {
         title: 'New Babysitting Request Near You',
-        body: `${request.city}, ${request.state} • ${request.startTime}-${request.endTime}`,
+        body,
         url: `/sitting/sitter/jobs/${request._id}`,
         tag: `job-${request._id}`
       });
@@ -73,8 +110,9 @@ async function notifyNewJob(request) {
       await createInApp(sitter.userId, {
         type: 'new_job',
         title: 'New Babysitting Request Near You',
-        body: `${request.city}, ${request.state} • ${request.startTime}-${request.endTime}`,
-        link: `/sitting/sitter/jobs/${request._id}`
+        body,
+        link: `/sitting/sitter/jobs/${request._id}`,
+        dedupeKey: `new_job:${request._id}:sitter:${sitter.userId}`
       });
     }));
   } catch (error) {
@@ -91,6 +129,7 @@ async function notifySitterResponded(request, sitter) {
     if (!family) return;
 
     const sitterName = `${sitter.firstName} ${sitter.lastName}`.trim();
+    const dateLabel = formatJobDate(request.date);
 
     await safeEmail(emailService.sendSitterRespondedToFamily({
       to: family.email,
@@ -104,7 +143,7 @@ async function notifySitterResponded(request, sitter) {
 
     await safePush(family.userId, {
       title: 'A Sitter Is Interested!',
-      body: `${sitterName} responded to your request`,
+      body: `${sitterName} responded to your ${dateLabel} request`,
       url: `/sitting/family/requests/${request._id}`,
       tag: `response-${request._id}`
     });
@@ -112,8 +151,9 @@ async function notifySitterResponded(request, sitter) {
     await createInApp(family.userId, {
       type: 'response',
       title: 'A Sitter Is Interested!',
-      body: `${sitterName} responded to your request`,
-      link: `/sitting/family/requests/${request._id}`
+      body: `${sitterName} responded to your ${dateLabel} request`,
+      link: `/sitting/family/requests/${request._id}`,
+      dedupeKey: `response:${request._id}:sitter:${sitter._id}:family:${family.userId}`
     });
   } catch (error) {
     console.error('notifySitterResponded error:', error.message);
@@ -126,6 +166,8 @@ async function notifySitterResponded(request, sitter) {
 async function notifyBookingConfirmed(request, sitter, family) {
   try {
     const familyName = family?.householdName || 'A family';
+    const dateLabel = formatJobDate(request.date);
+    const timeRange = formatTimeRange(request);
 
     await safeEmail(emailService.sendBookingConfirmedToSitter({
       to: sitter.email,
@@ -141,7 +183,7 @@ async function notifyBookingConfirmed(request, sitter, family) {
 
     await safePush(sitter.userId, {
       title: "You're Booked!",
-      body: `${familyName} confirmed you for ${request.startTime}-${request.endTime}`,
+      body: `${familyName} confirmed you for ${dateLabel}, ${timeRange}`,
       url: '/sitting/sitter/bookings',
       tag: `confirmed-${request._id}`
     });
@@ -149,8 +191,9 @@ async function notifyBookingConfirmed(request, sitter, family) {
     await createInApp(sitter.userId, {
       type: 'confirmed',
       title: "You're Booked!",
-      body: `${familyName} confirmed you for ${request.startTime}-${request.endTime}`,
-      link: '/sitting/sitter/bookings'
+      body: `${familyName} confirmed you for ${dateLabel}, ${timeRange}`,
+      link: '/sitting/sitter/bookings',
+      dedupeKey: `confirmed:${request._id}:sitter:${sitter.userId}`
     });
 
     // Also confirm to the family (in-app + push)
@@ -158,15 +201,16 @@ async function notifyBookingConfirmed(request, sitter, family) {
       const sitterName = `${sitter.firstName} ${sitter.lastName || ''}`.trim();
       await safePush(family.userId, {
         title: 'Booking Confirmed',
-        body: `${sitterName} is booked for ${request.startTime}-${request.endTime}`,
+        body: `${sitterName} is booked for ${dateLabel}, ${timeRange}`,
         url: '/sitting/family/bookings',
         tag: `confirmed-fam-${request._id}`
       });
       await createInApp(family.userId, {
         type: 'confirmed',
         title: 'Booking Confirmed',
-        body: `${sitterName} is booked for ${request.startTime}-${request.endTime}`,
-        link: '/sitting/family/bookings'
+        body: `${sitterName} is booked for ${dateLabel}, ${timeRange}`,
+        link: '/sitting/family/bookings',
+        dedupeKey: `confirmed:${request._id}:family:${family.userId}`
       });
     }
   } catch (error) {
@@ -179,6 +223,9 @@ async function notifyBookingConfirmed(request, sitter, family) {
  */
 async function notifyBookingCancelledToSitter(request, sitter) {
   try {
+    const dateLabel = formatJobDate(request.date);
+    const timeRange = formatTimeRange(request);
+
     await safeEmail(emailService.sendBookingCancelled({
       to: sitter.email,
       recipientName: sitter.firstName,
@@ -190,7 +237,7 @@ async function notifyBookingCancelledToSitter(request, sitter) {
 
     await safePush(sitter.userId, {
       title: 'Booking Cancelled',
-      body: `The family cancelled your ${request.startTime}-${request.endTime} booking`,
+      body: `The family cancelled your ${dateLabel}, ${timeRange} booking`,
       url: '/sitting/sitter/bookings',
       tag: `cancelled-${request._id}`
     });
@@ -198,8 +245,9 @@ async function notifyBookingCancelledToSitter(request, sitter) {
     await createInApp(sitter.userId, {
       type: 'cancelled',
       title: 'Booking Cancelled',
-      body: `The family cancelled your ${request.startTime}-${request.endTime} booking`,
-      link: '/sitting/sitter/bookings'
+      body: `The family cancelled your ${dateLabel}, ${timeRange} booking`,
+      link: '/sitting/sitter/bookings',
+      dedupeKey: `cancelled:${request._id}:sitter:${sitter.userId}`
     });
   } catch (error) {
     console.error('notifyBookingCancelledToSitter error:', error.message);
@@ -211,6 +259,9 @@ async function notifyBookingCancelledToSitter(request, sitter) {
  */
 async function notifyBookingReopenedToFamily(request, family) {
   try {
+    const dateLabel = formatJobDate(request.date);
+    const timeRange = formatTimeRange(request);
+
     await safeEmail(emailService.sendBookingCancelled({
       to: family.email,
       recipientName: family.householdName,
@@ -222,7 +273,7 @@ async function notifyBookingReopenedToFamily(request, family) {
 
     await safePush(family.userId, {
       title: 'Sitter Cancelled — Request Reopened',
-      body: `Your ${request.startTime}-${request.endTime} request is open again`,
+      body: `Your ${dateLabel}, ${timeRange} request is open again`,
       url: `/sitting/family/requests/${request._id}`,
       tag: `reopened-${request._id}`
     });
@@ -230,8 +281,9 @@ async function notifyBookingReopenedToFamily(request, family) {
     await createInApp(family.userId, {
       type: 'reopened',
       title: 'Sitter Cancelled — Request Reopened',
-      body: `Your ${request.startTime}-${request.endTime} request is open again`,
-      link: `/sitting/family/requests/${request._id}`
+      body: `Your ${dateLabel}, ${timeRange} request is open again`,
+      link: `/sitting/family/requests/${request._id}`,
+      dedupeKey: `reopened:${request._id}:family:${family.userId}`
     });
   } catch (error) {
     console.error('notifyBookingReopenedToFamily error:', error.message);
@@ -260,7 +312,8 @@ async function notifyBookingFilledToOthers(request, sitterIds) {
         type: 'filled',
         title: 'This booking has been filled',
         body: softBody,
-        link: '/sitting/sitter/jobs'
+        link: '/sitting/sitter/jobs',
+        dedupeKey: `filled:${request._id}:sitter:${sitter.userId}`
       });
     }));
   } catch (error) {
@@ -273,6 +326,8 @@ async function notifyBookingFilledToOthers(request, sitterIds) {
  */
 async function notifyBookingPaid(request, sitter) {
   try {
+    const dateLabel = formatJobDate(request.date);
+    const timeRange = formatTimeRange(request);
     const amount = request.payment?.amountCents
       ? `$${(request.payment.amountCents / 100).toFixed(2)} `
       : '';
@@ -291,7 +346,7 @@ async function notifyBookingPaid(request, sitter) {
 
     await safePush(sitter.userId, {
       title: 'Payment Received',
-      body: `${amount}was paid for your ${request.startTime}-${request.endTime} booking`,
+      body: `${amount}was paid for your ${dateLabel}, ${timeRange} booking`,
       url: '/sitting/sitter/bookings',
       tag: `paid-${request._id}`
     });
@@ -299,11 +354,43 @@ async function notifyBookingPaid(request, sitter) {
     await createInApp(sitter.userId, {
       type: 'payment',
       title: 'Payment Received',
-      body: `${amount}was paid for your ${request.startTime}-${request.endTime} booking`,
-      link: '/sitting/sitter/bookings'
+      body: `${amount}was paid for your ${dateLabel}, ${timeRange} booking`,
+      link: '/sitting/sitter/bookings',
+      dedupeKey: `paid:${request._id}:sitter:${sitter.userId}`
     });
   } catch (error) {
     console.error('notifyBookingPaid error:', error.message);
+  }
+}
+
+/**
+ * A confirmed booking reached its out-time — remind the family to rate the sitter.
+ */
+async function notifyFamilyReviewReminder(request, family, sitter) {
+  try {
+    if (!family?.userId) return;
+
+    const sitterName = `${sitter?.firstName || 'your sitter'} ${sitter?.lastName || ''}`.trim();
+    const dateLabel = formatJobDate(request.date);
+    const link = `/sitting/family/bookings?review=${request._id}`;
+    const body = `Your ${dateLabel} booking with ${sitterName} has ended. Please rate your sitter.`;
+
+    await safePush(family.userId, {
+      title: 'Rate your sitter',
+      body,
+      url: link,
+      tag: `review-reminder-${request._id}`
+    });
+
+    await createInApp(family.userId, {
+      type: 'review_reminder',
+      title: 'Rate your sitter',
+      body,
+      link,
+      dedupeKey: `review-reminder:${request._id}:family:${family.userId}`
+    });
+  } catch (error) {
+    console.error('notifyFamilyReviewReminder error:', error.message);
   }
 }
 
@@ -314,5 +401,6 @@ export default {
   notifyBookingCancelledToSitter,
   notifyBookingReopenedToFamily,
   notifyBookingFilledToOthers,
-  notifyBookingPaid
+  notifyBookingPaid,
+  notifyFamilyReviewReminder
 };

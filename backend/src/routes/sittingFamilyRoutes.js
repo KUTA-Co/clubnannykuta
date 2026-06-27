@@ -51,6 +51,24 @@ function parseRequestDateTimes(dateValue, startTime, endTime) {
   return { startDateTime, endDateTime };
 }
 
+function parseIsoDateTime(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveRequestDateTimes(dateValue, startTime, endTime, startAtValue, endAtValue) {
+  const explicitStartAt = parseIsoDateTime(startAtValue);
+  const explicitEndAt = parseIsoDateTime(endAtValue);
+
+  if (explicitStartAt && explicitEndAt) {
+    return { startAt: explicitStartAt, endAt: explicitEndAt };
+  }
+
+  const { startDateTime, endDateTime } = parseRequestDateTimes(dateValue, startTime, endTime);
+  return { startAt: startDateTime, endAt: endDateTime };
+}
+
 function validateBookingRequestInput({
   date,
   startTime,
@@ -59,7 +77,8 @@ function validateBookingRequestInput({
   city,
   state,
   postalCode,
-  numberOfChildren
+  numberOfChildren,
+  startAt
 }) {
   if (!date || !startTime || !endTime || !numberOfChildren) {
     return 'Date, start time, end time, and number of children are required';
@@ -75,7 +94,8 @@ function validateBookingRequestInput({
     return 'Please enter a valid date, start time, and end time';
   }
 
-  if (startDateTime < new Date()) {
+  const comparableStart = parseIsoDateTime(startAt) || startDateTime;
+  if (comparableStart < new Date()) {
     return 'Start time cannot be in the past';
   }
 
@@ -200,7 +220,10 @@ router.post('/requests', async (req, res) => {
       numberOfChildren,
       childrenAges,
       notes,
-      specialInstructions
+      specialInstructions,
+      startAt,
+      endAt,
+      timeZone
     } = req.body;
 
     const resolvedAddress = address || profile.address;
@@ -216,7 +239,8 @@ router.post('/requests', async (req, res) => {
       city: resolvedCity,
       state: resolvedState,
       postalCode: resolvedPostalCode,
-      numberOfChildren
+      numberOfChildren,
+      startAt
     });
 
     if (validationMessage) {
@@ -226,12 +250,17 @@ router.post('/requests', async (req, res) => {
       });
     }
 
+    const requestDateTimes = resolveRequestDateTimes(date, startTime, endTime, startAt, endAt);
+
     // Create the booking request
     const request = await BookingRequest.create({
       familyId: profile._id,
       date: new Date(date),
       startTime,
       endTime,
+      startAt: requestDateTimes.startAt,
+      endAt: requestDateTimes.endAt,
+      timeZone,
       address: resolvedAddress,
       city: resolvedCity,
       state: resolvedState,
@@ -244,8 +273,8 @@ router.post('/requests', async (req, res) => {
       expiresAt: new Date(date)
     });
 
-    // Notify active sitters in the area (fire-and-forget)
-    notificationService.notifyNewJob(request);
+    // Notify active sitters in the area before the serverless function exits.
+    await notificationService.notifyNewJob(request);
 
     res.status(201).json({
       success: true,
@@ -411,13 +440,29 @@ router.put('/requests/:id', async (req, res) => {
 
     const allowedUpdates = [
       'date', 'startTime', 'endTime', 'address', 'city', 'state', 'postalCode',
-      'numberOfChildren', 'childrenAges', 'notes', 'specialInstructions'
+      'numberOfChildren', 'childrenAges', 'notes', 'specialInstructions', 'timeZone'
     ];
+
+    const timeFieldsChanged = ['date', 'startTime', 'endTime', 'startAt', 'endAt']
+      .some((key) => req.body[key] !== undefined);
 
     for (const key of allowedUpdates) {
       if (req.body[key] !== undefined) {
         request[key] = key === 'date' ? new Date(req.body[key]) : req.body[key];
       }
+    }
+
+    if (timeFieldsChanged) {
+      const requestDateTimes = resolveRequestDateTimes(
+        request.date,
+        request.startTime,
+        request.endTime,
+        req.body.startAt,
+        req.body.endAt
+      );
+      request.startAt = requestDateTimes.startAt;
+      request.endAt = requestDateTimes.endAt;
+      request.reviewReminderSentAt = null;
     }
 
     const validationMessage = validateBookingRequestInput(request);
@@ -492,11 +537,11 @@ router.delete('/requests/:id', async (req, res) => {
       { status: 'not_selected' }
     );
 
-    // Notify the confirmed sitter that the family cancelled (fire-and-forget)
+    // Notify the confirmed sitter that the family cancelled before returning.
     if (previouslyConfirmedSitterId) {
       const sitter = await SitterProfile.findById(previouslyConfirmedSitterId);
       if (sitter) {
-        notificationService.notifyBookingCancelledToSitter(request, sitter);
+        await notificationService.notifyBookingCancelledToSitter(request, sitter);
       }
     }
 
@@ -626,9 +671,9 @@ router.post('/requests/:id/confirm', async (req, res) => {
     const updatedRequest = await BookingRequest.findById(request._id)
       .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids');
 
-    // Notify the confirmed sitter, and gently notify the non-selected sitters (fire-and-forget)
-    notificationService.notifyBookingConfirmed(request, sitter, profile);
-    notificationService.notifyBookingFilledToOthers(request, otherSitterIds);
+    // Notify the confirmed sitter, and gently notify the non-selected sitters.
+    await notificationService.notifyBookingConfirmed(request, sitter, profile);
+    await notificationService.notifyBookingFilledToOthers(request, otherSitterIds);
 
     res.json({
       success: true,

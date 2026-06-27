@@ -138,6 +138,7 @@ export default function FamilyBookings() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewParamHandled, setReviewParamHandled] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -153,7 +154,9 @@ export default function FamilyBookings() {
       toast({ title: 'Payment cancelled', description: 'You can pay anytime from this page.', variant: 'destructive' });
     }
     if (payment) {
-      window.history.replaceState({}, '', window.location.pathname);
+      params.delete('payment');
+      const query = params.toString();
+      window.history.replaceState({}, '', query ? `${window.location.pathname}?${query}` : window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -229,6 +232,29 @@ export default function FamilyBookings() {
     setReviewRating(0);
     setReviewComment('');
   };
+
+  useEffect(() => {
+    if (reviewParamHandled || loading) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const reviewId = params.get('review');
+    if (!reviewId) {
+      setReviewParamHandled(true);
+      return;
+    }
+
+    const reviewTarget = pastBookings.find((booking) => booking._id === reviewId);
+    if (reviewTarget) {
+      setActiveTab('past');
+      setView('list');
+      openReview(reviewId);
+      params.delete('review');
+      const query = params.toString();
+      window.history.replaceState({}, '', query ? `${window.location.pathname}?${query}` : window.location.pathname);
+    }
+
+    setReviewParamHandled(true);
+  }, [loading, pastBookings, reviewParamHandled]);
 
   const closeReview = () => {
     setReviewingId(null);

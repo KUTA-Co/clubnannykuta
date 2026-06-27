@@ -572,8 +572,8 @@ router.post('/jobs/:id/respond', async (req, res) => {
       await job.save();
     }
 
-    // Notify the family that a sitter is interested (fire-and-forget)
-    notificationService.notifySitterResponded(job, profile);
+    // Notify the family that a sitter is interested before the serverless function exits.
+    await notificationService.notifySitterResponded(job, profile);
 
     res.json({
       success: true,
@@ -787,10 +787,10 @@ router.delete('/bookings/:id', async (req, res) => {
       { status: 'withdrawn', withdrawnAt: new Date() }
     );
 
-    // Notify the family the booking was cancelled and reopened (fire-and-forget)
+    // Notify the family the booking was cancelled and reopened before returning.
     const family = await SittingFamilyProfile.findById(booking.familyId);
     if (family) {
-      notificationService.notifyBookingReopenedToFamily(booking, family);
+      await notificationService.notifyBookingReopenedToFamily(booking, family);
     }
 
     res.json({

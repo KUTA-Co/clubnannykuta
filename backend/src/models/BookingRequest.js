@@ -22,6 +22,16 @@ const bookingRequestSchema = new mongoose.Schema({
     required: [true, 'End time is required'],
     trim: true
   },
+  startAt: {
+    type: Date
+  },
+  endAt: {
+    type: Date
+  },
+  timeZone: {
+    type: String,
+    trim: true
+  },
 
   // Location
   address: {
@@ -110,6 +120,7 @@ const bookingRequestSchema = new mongoose.Schema({
   // Timestamps
   expiresAt: Date,
   completedAt: Date,
+  reviewReminderSentAt: Date,
   cancelledAt: Date,
   cancellationReason: {
     type: String,
@@ -126,6 +137,7 @@ bookingRequestSchema.index({ date: 1 });
 bookingRequestSchema.index({ confirmedSitterId: 1 });
 bookingRequestSchema.index({ city: 1, state: 1 });
 bookingRequestSchema.index({ postalCode: 1 });
+bookingRequestSchema.index({ status: 1, endAt: 1, reviewReminderSentAt: 1 });
 
 const BookingRequest = mongoose.model('BookingRequest', bookingRequestSchema);
 

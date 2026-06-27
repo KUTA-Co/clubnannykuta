@@ -1,5 +1,5 @@
 // Club Nanny Service Worker - Caching for performance + push notifications
-const CACHE_NAME = 'clubnanny-v13';
+const CACHE_NAME = 'clubnanny-v14';
 const STATIC_ASSETS = [
   '/clubnannynobg.png',
   '/favicon-32.png',
@@ -133,7 +133,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

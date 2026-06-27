@@ -55,22 +55,6 @@ export function NotificationBell({ color = "#C77DA3" }: NotificationBellProps) {
     setPopup(notification);
     playNotificationSound();
 
-    if ("Notification" in window && Notification.permission === "granted") {
-      try {
-        const browserNotification = new Notification(notification.title || "Club Nanny", {
-          body: notification.body || "You have a new notification",
-          icon: "/icon-192.png"
-        });
-        browserNotification.onclick = () => {
-          window.focus();
-          if (notification.link) navigate(notification.link);
-          browserNotification.close();
-        };
-      } catch {
-        // Browser notifications are best-effort.
-      }
-    }
-
     window.setTimeout(() => setPopup((current) => current?._id === notification._id ? null : current), 6500);
   };
 
@@ -110,7 +94,7 @@ export function NotificationBell({ color = "#C77DA3" }: NotificationBellProps) {
 
   useEffect(() => {
     fetchCount();
-    const t = setInterval(fetchCount, 15000);
+    const t = setInterval(fetchCount, 5000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

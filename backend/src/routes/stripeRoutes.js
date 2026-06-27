@@ -458,9 +458,9 @@ async function handleBookingPaymentSuccess(session) {
 
   console.log(`Booking ${bookingId} marked paid (session ${session.id})`);
 
-  // Notify the sitter that payment landed (fire-and-forget)
+  // Notify the sitter that payment landed before the webhook finishes.
   if (booking.confirmedSitterId) {
-    notificationService.notifyBookingPaid(booking, booking.confirmedSitterId);
+    await notificationService.notifyBookingPaid(booking, booking.confirmedSitterId);
   }
 }
 
