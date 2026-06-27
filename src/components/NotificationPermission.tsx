@@ -183,23 +183,28 @@ export function NotificationPermission({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Switch
-            checked={isSubscribed}
-            onCheckedChange={handleToggle}
-            disabled={loading || permission === 'denied'}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleTestNotification}
-            disabled={loading || testing || permission === 'denied'}
-            className="whitespace-nowrap"
-          >
-            {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Send Test
-          </Button>
+        <div className="flex flex-col gap-1 sm:items-end">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={isSubscribed}
+              onCheckedChange={handleToggle}
+              disabled={loading || permission === 'denied'}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleTestNotification}
+              disabled={loading || testing || permission === 'denied'}
+              className="whitespace-nowrap"
+            >
+              {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Send Test
+            </Button>
+          </div>
+          <p className="max-w-xs text-xs text-muted-foreground sm:text-right">
+            Allow notifications in your browser or device settings to receive Club Nanny alerts on this device.
+          </p>
         </div>
       </div>
     );

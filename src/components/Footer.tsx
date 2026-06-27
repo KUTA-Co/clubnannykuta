@@ -74,12 +74,17 @@ export function Footer() {
             <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
               <Link to="/privacy" className="text-xs md:text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="text-xs md:text-sm text-white/60 hover:text-white transition-colors">Terms of Service</Link>
-              <DownloadAppButton
-                variant="ghost"
-                className="h-auto rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white md:text-sm"
-              >
-                Download the App
-              </DownloadAppButton>
+              <div className="flex flex-col items-center gap-1">
+                <DownloadAppButton
+                  variant="ghost"
+                  className="h-auto rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white md:text-sm"
+                >
+                  Download the App
+                </DownloadAppButton>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-white/40">
+                  For Sitter Services
+                </span>
+              </div>
             </div>
           </div>
         </div>
