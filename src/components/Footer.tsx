@@ -1,6 +1,7 @@
 // Site footer: Get Started links, social icons, contact
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Mail } from "lucide-react";
+import { DownloadAppButton } from "@/components/DownloadAppButton";
 
 export function Footer() {
   return (
@@ -70,9 +71,15 @@ export function Footer() {
             <p className="text-xs md:text-sm text-white/60">
               © {new Date().getFullYear()} Club Nanny. All rights reserved.
             </p>
-            <div className="flex gap-6 md:gap-8">
+            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
               <Link to="/privacy" className="text-xs md:text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="text-xs md:text-sm text-white/60 hover:text-white transition-colors">Terms of Service</Link>
+              <DownloadAppButton
+                variant="ghost"
+                className="h-auto rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white md:text-sm"
+              >
+                Download the App
+              </DownloadAppButton>
             </div>
           </div>
         </div>
