@@ -1,6 +1,7 @@
 import express from 'express';
 import PushSubscription from '../models/PushSubscription.js';
 import { sendPushToUser, sendPushToAll } from '../services/pushService.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -91,6 +92,78 @@ router.post('/unsubscribe', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to unsubscribe',
+    });
+  }
+});
+
+/**
+ * GET /api/push/status
+ * Authenticated device/account push status for in-app diagnostics
+ */
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const subscriptions = await PushSubscription.find({
+      userId: req.user.id,
+      isActive: true,
+    })
+      .sort({ updatedAt: -1 })
+      .select('endpoint userAgent createdAt updatedAt');
+
+    res.json({
+      success: true,
+      pushConfigured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+      activeSubscriptionCount: subscriptions.length,
+      subscriptions: subscriptions.map((sub) => ({
+        id: sub._id,
+        endpointHost: (() => {
+          try {
+            return new URL(sub.endpoint).host;
+          } catch {
+            return 'Unknown push service';
+          }
+        })(),
+        userAgent: sub.userAgent || '',
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Push status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get push status',
+    });
+  }
+});
+
+/**
+ * POST /api/push/test-me
+ * Send a real server-side push notification to the authenticated user's devices.
+ */
+router.post('/test-me', authenticateToken, async (req, res) => {
+  try {
+    const payload = {
+      title: 'Club Nanny Test Notification',
+      body: 'Notifications are connected for this account.',
+      url: req.body?.url || '/',
+      tag: `club-nanny-test-${req.user.id}-${Date.now()}`,
+      renotify: true,
+    };
+
+    const result = await sendPushToUser(req.user.id, payload);
+
+    res.json({
+      success: true,
+      result,
+      message: result.total > 0
+        ? `Test sent to ${result.sent} of ${result.total} subscribed device${result.total === 1 ? '' : 's'}.`
+        : 'No subscribed device is linked to this account yet.',
+    });
+  } catch (error) {
+    console.error('Push test-me error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send test notification',
     });
   }
 });
