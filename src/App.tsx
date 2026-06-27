@@ -7,7 +7,6 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { SittingProtectedRoute } from "@/components/sitting/SittingProtectedRoute";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -108,7 +107,6 @@ const App = () => {
         <Toaster />
         <Sonner />
         <OfflineBanner />
-        <InstallPrompt />
         <BrowserRouter>
           <ScrollToTop />
           <AnalyticsTracker />
