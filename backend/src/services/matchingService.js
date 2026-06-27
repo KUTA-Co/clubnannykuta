@@ -214,6 +214,38 @@ class MatchingService {
   }
 
   /**
+   * Keep a booking request's open/response status aligned with active sitter interest.
+   * A request should only show "Has Responses" when at least one sitter is still
+   * interested and available for the family to choose.
+   * @param {Object|ObjectId|string} requestOrId - BookingRequest document or ID
+   * @returns {Object|null} Updated request document plus interested response count
+   */
+  async syncRequestResponseStatus(requestOrId) {
+    const request = requestOrId?.status
+      ? requestOrId
+      : await BookingRequest.findById(requestOrId);
+
+    if (!request) return null;
+
+    if (!['open', 'responses_received'].includes(request.status)) {
+      return { request, responseCount: undefined };
+    }
+
+    const responseCount = await SitterResponse.countDocuments({
+      requestId: request._id,
+      status: 'interested'
+    });
+    const nextStatus = responseCount > 0 ? 'responses_received' : 'open';
+
+    if (request.status !== nextStatus) {
+      request.status = nextStatus;
+      await request.save();
+    }
+
+    return { request, responseCount };
+  }
+
+  /**
    * Get recent family reviews for a sitter profile.
    * @param {ObjectId} sitterId - The sitter profile ID
    * @param {number} limit - Maximum number of reviews to return

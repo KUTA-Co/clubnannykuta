@@ -156,11 +156,13 @@ router.post('/family-application', async (req, res) => {
       paymentStatus: 'unpaid'
     });
 
-    // Send immediate notification emails (don't block on this)
-    emailService.handleApplicationSubmitted({
+    const emailResult = await emailService.handleApplicationSubmitted({
       type: 'family',
       application: application.toObject()
-    }).catch(err => console.error('Failed to send application notification emails:', err));
+    });
+    if (!emailResult.success) {
+      console.error('Family application notification emails failed:', emailResult);
+    }
 
     // Create Stripe checkout session
     try {
@@ -276,11 +278,13 @@ router.post('/nanny-application', async (req, res) => {
       paymentStatus: 'unpaid'
     });
 
-    // Send immediate notification emails (don't block on this)
-    emailService.handleApplicationSubmitted({
+    const emailResult = await emailService.handleApplicationSubmitted({
       type: 'nanny',
       application: application.toObject()
-    }).catch(err => console.error('Failed to send application notification emails:', err));
+    });
+    if (!emailResult.success) {
+      console.error('Nanny application notification emails failed:', emailResult);
+    }
 
     // Create Stripe checkout session
     try {

@@ -21,10 +21,15 @@ if (process.env.MAILGUN_API_KEY) {
 }
 
 const DOMAIN = process.env.MAILGUN_DOMAIN || 'noreply.clubnanny.com';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Club Nanny <noreply@noreply.clubnanny.com>';
+const PUBLIC_CONTACT_EMAIL = 'leigh@clubnanny.com';
+const DEFAULT_FROM_EMAIL = `Club Nanny <noreply@${DOMAIN}>`;
+const configuredFromEmail = process.env.FROM_EMAIL || DEFAULT_FROM_EMAIL;
+const FROM_EMAIL = /@kuta\.co\.za/i.test(configuredFromEmail)
+  ? DEFAULT_FROM_EMAIL
+  : configuredFromEmail;
 const APP_URL = (process.env.FRONTEND_URL || 'https://clubnanny.com').replace(/\/+$/, '');
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'Leigh@clubnanny.com';
-const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || SUPPORT_EMAIL;
+const SUPPORT_EMAIL = PUBLIC_CONTACT_EMAIL;
+const REPLY_TO_EMAIL = PUBLIC_CONTACT_EMAIL;
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'Leigh@clubnanny.com')
   .split(',')
   .map(email => email.trim())
@@ -1136,7 +1141,7 @@ class EmailService {
         <div class="highlight-box">
           <h3>Refund Notice</h3>
           <p>
-            Your $12 first month subscription fee has been refunded. Please allow a few business days for it to appear with your bank or card provider.
+            Your $12 first month subscription fee has been refunded. This refund may not reflect in your account immediately; please allow up to 3 business days for it to appear with your bank or card provider.
           </p>
         </div>
         ` : ''}

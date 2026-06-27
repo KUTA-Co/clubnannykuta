@@ -369,21 +369,23 @@ router.get('/jobs', async (req, res) => {
     // Check availability for each job and get response status
     const jobsWithStatus = await Promise.all(
       jobs.map(async (job) => {
+        const synced = await matchingService.syncRequestResponseStatus(job);
+        const syncedJob = synced?.request || job;
         const isAvailable = await matchingService.checkSitterAvailability(
           profile._id,
-          job.date,
-          job.startTime,
-          job.endTime
+          syncedJob.date,
+          syncedJob.startTime,
+          syncedJob.endTime
         );
 
         // Check if sitter has already responded
         const existingResponse = await SitterResponse.findOne({
-          requestId: job._id,
+          requestId: syncedJob._id,
           sitterId: profile._id
         });
 
         return {
-          ...job.toObject(),
+          ...syncedJob.toObject(),
           isAvailable,
           hasResponded: !!existingResponse,
           responseStatus: existingResponse?.status
@@ -428,24 +430,27 @@ router.get('/jobs/:id', async (req, res) => {
       });
     }
 
+    const synced = await matchingService.syncRequestResponseStatus(job);
+    const syncedJob = synced?.request || job;
+
     // Check if sitter has responded
     const existingResponse = await SitterResponse.findOne({
-      requestId: job._id,
+      requestId: syncedJob._id,
       sitterId: profile._id
     });
 
     // Check availability
     const isAvailable = await matchingService.checkSitterAvailability(
       profile._id,
-      job.date,
-      job.startTime,
-      job.endTime
+      syncedJob.date,
+      syncedJob.startTime,
+      syncedJob.endTime
     );
     const isSelected =
       existingResponse?.status === 'selected' &&
-      job.confirmedSitterId?.toString() === profile._id.toString();
+      syncedJob.confirmedSitterId?.toString() === profile._id.toString();
 
-    const jobObject = job.toObject();
+    const jobObject = syncedJob.toObject();
     if (!isSelected) {
       delete jobObject.address;
       if (jobObject.familyId) {
@@ -566,11 +571,7 @@ router.post('/jobs/:id/respond', async (req, res) => {
       });
     }
 
-    // Update job status if first response
-    if (job.status === 'open') {
-      job.status = 'responses_received';
-      await job.save();
-    }
+    await matchingService.syncRequestResponseStatus(job);
 
     // Notify the family that a sitter is interested before the serverless function exits.
     await notificationService.notifySitterResponded(job, profile);
@@ -625,6 +626,7 @@ router.delete('/jobs/:id/respond', async (req, res) => {
     response.status = 'withdrawn';
     response.withdrawnAt = new Date();
     await response.save();
+    await matchingService.syncRequestResponseStatus(req.params.id);
 
     res.json({
       success: true,
@@ -786,6 +788,7 @@ router.delete('/bookings/:id', async (req, res) => {
       { requestId: booking._id, sitterId: profile._id },
       { status: 'withdrawn', withdrawnAt: new Date() }
     );
+    await matchingService.syncRequestResponseStatus(booking);
 
     // Notify the family the booking was cancelled and reopened before returning.
     const family = await SittingFamilyProfile.findById(booking.familyId);

@@ -110,6 +110,7 @@ class StripeService {
       ],
       mode: 'payment',
       customer_email: email,
+      allow_promotion_codes: true,
       metadata: this.withAppContext(metadata),
       success_url: `${process.env.FRONTEND_URL}/application-submitted?type=${type}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/apply-${type}?payment=cancelled`,
@@ -297,6 +298,7 @@ class StripeService {
       line_items: lineItems,
       mode: 'payment',
       customer_email: email,
+      allow_promotion_codes: true,
       metadata,
       payment_intent_data: {
         metadata

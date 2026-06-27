@@ -323,17 +323,14 @@ router.get('/requests', async (req, res) => {
       .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids averageRating reviewCount')
       .sort({ date: upcoming === 'true' ? 1 : -1 });
 
-    // Get response counts for open requests
+    // Keep the visible status aligned with currently interested sitters.
     const requestsWithCounts = await Promise.all(
       requests.map(async (request) => {
-        if (['open', 'responses_received'].includes(request.status)) {
-          const responseCount = await SitterResponse.countDocuments({
-            requestId: request._id,
-            status: 'interested'
-          });
-          return { ...request.toObject(), responseCount };
-        }
-        return request.toObject();
+        const synced = await matchingService.syncRequestResponseStatus(request);
+        return {
+          ...request.toObject(),
+          responseCount: synced?.responseCount
+        };
       })
     );
 
@@ -380,16 +377,20 @@ router.get('/requests/:id', async (req, res) => {
       });
     }
 
+    const synced = await matchingService.syncRequestResponseStatus(request);
+    const syncedRequest = synced?.request || request;
+
     // Get sitter responses
-    const responses = await matchingService.getRequestResponses(request._id);
-    const confirmedSitterReviews = request.confirmedSitterId?._id
-      ? await matchingService.getSitterReviews(request.confirmedSitterId._id)
+    const responses = await matchingService.getRequestResponses(syncedRequest._id);
+    const confirmedSitterReviews = syncedRequest.confirmedSitterId?._id
+      ? await matchingService.getSitterReviews(syncedRequest.confirmedSitterId._id)
       : [];
 
     res.json({
       success: true,
       request: {
-        ...request.toObject(),
+        ...syncedRequest.toObject(),
+        responseCount: synced?.responseCount,
         confirmedSitterReviews,
         responses
       }
