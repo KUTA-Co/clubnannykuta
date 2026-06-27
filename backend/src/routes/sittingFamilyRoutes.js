@@ -285,7 +285,7 @@ router.get('/requests', async (req, res) => {
     }
 
     const requests = await BookingRequest.find(query)
-      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids')
+      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids averageRating reviewCount')
       .sort({ date: upcoming === 'true' ? 1 : -1 });
 
     // Get response counts for open requests
@@ -335,7 +335,7 @@ router.get('/requests/:id', async (req, res) => {
       familyId: profile._id
     }).populate(
       'confirmedSitterId',
-      'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids bio experience city state'
+      'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids bio experience city state averageRating reviewCount'
     );
 
     if (!request) {
@@ -347,11 +347,15 @@ router.get('/requests/:id', async (req, res) => {
 
     // Get sitter responses
     const responses = await matchingService.getRequestResponses(request._id);
+    const confirmedSitterReviews = request.confirmedSitterId?._id
+      ? await matchingService.getSitterReviews(request.confirmedSitterId._id)
+      : [];
 
     res.json({
       success: true,
       request: {
         ...request.toObject(),
+        confirmedSitterReviews,
         responses
       }
     });
@@ -668,7 +672,7 @@ router.get('/bookings', async (req, res) => {
     }
 
     const bookings = await BookingRequest.find(query)
-      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids')
+      .populate('confirmedSitterId', 'firstName lastName profilePhoto phone email hourlyRate hourlyRate1Kid hourlyRate2Kids hourlyRate3PlusKids averageRating reviewCount')
       .sort({ date: upcoming === 'true' ? 1 : -1 });
 
     res.json({

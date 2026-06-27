@@ -14,6 +14,14 @@ import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/l
 const API_URL = import.meta.env.VITE_API_URL || '';
 const TIME_VALUE_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+interface SitterReview {
+  _id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  familyId?: { householdName?: string };
+}
+
 interface SitterResponse {
   _id: string;
   status: string;
@@ -43,13 +51,7 @@ interface SitterResponse {
     averageRating?: number;
     reviewCount?: number;
   };
-  sitterReviews?: {
-    _id: string;
-    rating: number;
-    comment?: string;
-    createdAt: string;
-    familyId?: { householdName?: string };
-  }[];
+  sitterReviews?: SitterReview[];
 }
 
 interface Request {
@@ -78,7 +80,10 @@ interface Request {
     hourlyRate1Kid?: number;
     hourlyRate2Kids?: number;
     hourlyRate3PlusKids?: number;
+    averageRating?: number;
+    reviewCount?: number;
   };
+  confirmedSitterReviews?: SitterReview[];
 }
 
 interface EditRequestValues {
@@ -168,6 +173,74 @@ function RateGrid({ sitter, numberOfChildren }: { sitter: SitterResponse['sitter
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ReviewStars({ rating, size = "h-3.5 w-3.5" }: { rating: number; size?: string }) {
+  return (
+    <>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={size}
+          style={{ color: '#C77DA3' }}
+          fill={n <= rating ? '#C77DA3' : 'none'}
+        />
+      ))}
+    </>
+  );
+}
+
+function SitterReviewSummary({
+  averageRating,
+  reviewCount
+}: {
+  averageRating?: number;
+  reviewCount?: number;
+}) {
+  if (!reviewCount) {
+    return (
+      <p className="mt-1 flex items-center gap-1 text-sm text-[#4A4A4A]/55">
+        <Star className="h-4 w-4" style={{ color: '#C77DA3' }} />
+        No reviews yet
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-1 flex items-center gap-1 text-sm text-[#4A4A4A]/70">
+      <Star className="h-4 w-4" style={{ color: '#C77DA3' }} fill="#C77DA3" />
+      {(averageRating || 0).toFixed(1)}
+      <span className="text-[#4A4A4A]/40">
+        ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+      </span>
+    </p>
+  );
+}
+
+function SitterReviewsList({ reviews }: { reviews?: SitterReview[] }) {
+  if (!reviews?.length) {
+    return (
+      <div className="rounded-xl bg-gray-50 p-3 text-sm text-[#4A4A4A]/60">
+        No reviews yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {reviews.map((rev) => (
+        <div key={rev._id} className="rounded-xl bg-gray-50 p-3">
+          <div className="mb-1 flex items-center gap-1">
+            <ReviewStars rating={rev.rating} />
+            {rev.familyId?.householdName && (
+              <span className="ml-1 text-xs text-[#4A4A4A]/50">- {rev.familyId.householdName}</span>
+            )}
+          </div>
+          {rev.comment && <p className="text-sm text-[#4A4A4A]/70">{rev.comment}</p>}
+        </div>
+      ))}
     </div>
   );
 }
@@ -471,13 +544,10 @@ export default function RequestDetail() {
                     {selectedResponse.sitterId.age ? `Age ${selectedResponse.sitterId.age} • ` : ''}
                     {selectedResponse.sitterId.city}, {selectedResponse.sitterId.state}
                   </p>
-                  {(selectedResponse.sitterId.reviewCount ?? 0) > 0 && (
-                    <p className="mt-1 flex items-center gap-1 text-sm text-[#4A4A4A]/70">
-                      <Star className="h-4 w-4" style={{ color: '#C77DA3' }} fill="#C77DA3" />
-                      {selectedResponse.sitterId.averageRating?.toFixed(1)}
-                      <span className="text-[#4A4A4A]/40">({selectedResponse.sitterId.reviewCount} reviews)</span>
-                    </p>
-                  )}
+                  <SitterReviewSummary
+                    averageRating={selectedResponse.sitterId.averageRating}
+                    reviewCount={selectedResponse.sitterId.reviewCount}
+                  />
                 </div>
               </div>
               <button
@@ -533,31 +603,10 @@ export default function RequestDetail() {
                 </section>
               )}
 
-              {selectedResponse.sitterReviews && selectedResponse.sitterReviews.length > 0 && (
-                <section>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">Reviews</h3>
-                  <div className="space-y-2">
-                    {selectedResponse.sitterReviews.map((rev) => (
-                      <div key={rev._id} className="rounded-xl bg-gray-50 p-3">
-                        <div className="mb-1 flex items-center gap-1">
-                          {[1, 2, 3, 4, 5].map((n) => (
-                            <Star
-                              key={n}
-                              className="h-3.5 w-3.5"
-                              style={{ color: '#C77DA3' }}
-                              fill={n <= rev.rating ? '#C77DA3' : 'none'}
-                            />
-                          ))}
-                          {rev.familyId?.householdName && (
-                            <span className="ml-1 text-xs text-[#4A4A4A]/50">- {rev.familyId.householdName}</span>
-                          )}
-                        </div>
-                        {rev.comment && <p className="text-sm text-[#4A4A4A]/70">{rev.comment}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+              <section>
+                <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#4A4A4A]/55">Reviews</h3>
+                <SitterReviewsList reviews={selectedResponse.sitterReviews} />
+              </section>
 
               <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-end">
                 <Button
@@ -811,6 +860,10 @@ export default function RequestDetail() {
                 <p className="text-sm text-[#4A4A4A]/60">
                   {formatHourlyRate(confirmedRate)}/hour {rateContextLabel(request.numberOfChildren)}
                 </p>
+                <SitterReviewSummary
+                  averageRating={confirmedSitter.averageRating}
+                  reviewCount={confirmedSitter.reviewCount}
+                />
               </div>
 
               <div className="space-y-2 text-sm">
@@ -838,6 +891,11 @@ export default function RequestDetail() {
                   </p>
                 )}
               </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-[#F5D5E5] bg-white p-4">
+              <p className="mb-2 text-sm font-medium text-[#4A4A4A]">Sitter Reviews</p>
+              <SitterReviewsList reviews={request.confirmedSitterReviews} />
             </div>
           </CardContent>
         </Card>
@@ -945,13 +1003,10 @@ export default function RequestDetail() {
                                 <p className="text-sm text-[#4A4A4A]/60">
                                   {response.sitterId.age ? `Age ${response.sitterId.age} • ` : ''}{response.sitterId.city}, {response.sitterId.state}
                                 </p>
-                                {(response.sitterId.reviewCount ?? 0) > 0 && (
-                                  <p className="flex items-center gap-1 text-sm text-[#4A4A4A]/70 mt-1">
-                                    <Star className="w-4 h-4" style={{ color: '#C77DA3' }} fill="#C77DA3" />
-                                    {response.sitterId.averageRating?.toFixed(1)}
-                                    <span className="text-[#4A4A4A]/40">({response.sitterId.reviewCount} reviews)</span>
-                                  </p>
-                                )}
+                                <SitterReviewSummary
+                                  averageRating={response.sitterId.averageRating}
+                                  reviewCount={response.sitterId.reviewCount}
+                                />
                               </div>
                               <div className="text-right">
                                 <p className="text-lg font-bold" style={{ color: '#C77DA3' }}>
@@ -984,30 +1039,10 @@ export default function RequestDetail() {
                               </div>
                             )}
 
-                            {/* Reviews — only shown when this sitter has reviews */}
-                            {response.sitterReviews && response.sitterReviews.length > 0 && (
-                              <div className="mb-4 space-y-2">
-                                <p className="text-sm font-medium text-[#4A4A4A]">Reviews</p>
-                                {response.sitterReviews.map((rev) => (
-                                  <div key={rev._id} className="p-3 rounded-lg bg-gray-50">
-                                    <div className="flex items-center gap-1 mb-1">
-                                      {[1, 2, 3, 4, 5].map((n) => (
-                                        <Star
-                                          key={n}
-                                          className="w-3.5 h-3.5"
-                                          style={{ color: '#C77DA3' }}
-                                          fill={n <= rev.rating ? '#C77DA3' : 'none'}
-                                        />
-                                      ))}
-                                      {rev.familyId?.householdName && (
-                                        <span className="text-xs text-[#4A4A4A]/50 ml-1">— {rev.familyId.householdName}</span>
-                                      )}
-                                    </div>
-                                    {rev.comment && <p className="text-sm text-[#4A4A4A]/70">{rev.comment}</p>}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            <div className="mb-4 space-y-2">
+                              <p className="text-sm font-medium text-[#4A4A4A]">Reviews</p>
+                              <SitterReviewsList reviews={response.sitterReviews} />
+                            </div>
 
                             <div className="flex flex-col gap-2 sm:flex-row">
                               <Button

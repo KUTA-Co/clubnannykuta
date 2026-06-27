@@ -39,6 +39,8 @@ interface Booking {
     hourlyRate1Kid?: number;
     hourlyRate2Kids?: number;
     hourlyRate3PlusKids?: number;
+    averageRating?: number;
+    reviewCount?: number;
   };
 }
 
@@ -69,6 +71,33 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
         );
       })}
     </div>
+  );
+}
+
+function SitterRatingSummary({
+  averageRating,
+  reviewCount
+}: {
+  averageRating?: number;
+  reviewCount?: number;
+}) {
+  if (!reviewCount) {
+    return (
+      <p className="mt-1 flex items-center gap-1 text-xs text-[#4A4A4A]/55">
+        <Star className="h-3.5 w-3.5" style={{ color: '#C77DA3' }} />
+        No reviews yet
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-1 flex items-center gap-1 text-xs text-[#4A4A4A]/70">
+      <Star className="h-3.5 w-3.5" style={{ color: '#C77DA3' }} fill="#C77DA3" />
+      {(averageRating || 0).toFixed(1)}
+      <span className="text-[#4A4A4A]/40">
+        ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+      </span>
+    </p>
   );
 }
 
@@ -495,6 +524,10 @@ export default function FamilyBookings() {
                               <p className="text-sm text-[#4A4A4A]/60">
                                 {formatHourlyRate(getApplicableHourlyRate(booking.confirmedSitterId, booking.numberOfChildren))}/hour {rateContextLabel(booking.numberOfChildren)}
                               </p>
+                              <SitterRatingSummary
+                                averageRating={booking.confirmedSitterId.averageRating}
+                                reviewCount={booking.confirmedSitterId.reviewCount}
+                              />
                             </div>
                           </div>
 

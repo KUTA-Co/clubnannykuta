@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { PlusCircle, Clock, Calendar, ArrowRight, Users } from "lucide-react";
+import { PlusCircle, Clock, Calendar, ArrowRight, Users, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -33,7 +33,36 @@ interface Booking {
   confirmedSitterId: {
     firstName: string;
     lastName: string;
+    averageRating?: number;
+    reviewCount?: number;
   };
+}
+
+function SitterRatingSummary({
+  averageRating,
+  reviewCount
+}: {
+  averageRating?: number;
+  reviewCount?: number;
+}) {
+  if (!reviewCount) {
+    return (
+      <p className="mt-1 flex items-center gap-1 text-xs text-[#4A4A4A]/55">
+        <Star className="h-3.5 w-3.5" style={{ color: '#C77DA3' }} />
+        No reviews yet
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-1 flex items-center gap-1 text-xs text-[#4A4A4A]/70">
+      <Star className="h-3.5 w-3.5" style={{ color: '#C77DA3' }} fill="#C77DA3" />
+      {(averageRating || 0).toFixed(1)}
+      <span className="text-[#4A4A4A]/40">
+        ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+      </span>
+    </p>
+  );
 }
 
 export default function FamilyDashboard() {
@@ -260,6 +289,10 @@ export default function FamilyDashboard() {
                       <p className="text-sm" style={{ color: '#C77DA3' }}>
                         Sitter: {booking.confirmedSitterId?.firstName} {booking.confirmedSitterId?.lastName}
                       </p>
+                      <SitterRatingSummary
+                        averageRating={booking.confirmedSitterId?.averageRating}
+                        reviewCount={booking.confirmedSitterId?.reviewCount}
+                      />
                     </div>
                     <span
                       className="px-2 py-1 rounded-full text-xs font-medium"

@@ -197,17 +197,29 @@ class MatchingService {
       responses.map(async (r) => {
         const obj = r.toObject();
         if (r.sitterId?._id) {
-          obj.sitterReviews = await Review.find({ sitterId: r.sitterId._id })
-            .populate('familyId', 'householdName')
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .lean();
+          obj.sitterReviews = await this.getSitterReviews(r.sitterId._id);
         }
         return obj;
       })
     );
 
     return withReviews;
+  }
+
+  /**
+   * Get recent family reviews for a sitter profile.
+   * @param {ObjectId} sitterId - The sitter profile ID
+   * @param {number} limit - Maximum number of reviews to return
+   * @returns {Array} Recent reviews
+   */
+  async getSitterReviews(sitterId, limit = 5) {
+    if (!sitterId) return [];
+
+    return Review.find({ sitterId })
+      .populate('familyId', 'householdName')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
   }
 
   /**
