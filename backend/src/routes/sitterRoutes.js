@@ -7,7 +7,8 @@ import {
   SitterResponse,
   SittingFamilyProfile,
   Review,
-  FamilyReview
+  FamilyReview,
+  User
 } from '../models/index.js';
 import matchingService from '../services/matchingService.js';
 import notificationService from '../services/notificationService.js';
@@ -18,6 +19,10 @@ function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
 }
 
 // All sitter routes require authentication
@@ -63,7 +68,7 @@ router.get('/profile', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     const allowedUpdates = [
-      'firstName', 'lastName', 'phone', 'bio', 'age',
+      'firstName', 'lastName', 'email', 'phone', 'bio', 'age',
       'hourlyRate', 'hourlyRate1Kid', 'hourlyRate2Kids', 'hourlyRate3PlusKids',
       'yearsOfExperience', 'ageGroupsWorkedWith', 'typesOfExperience',
       'experience', 'faithJourney', 'whyCalledToServe', 'specialSkills',
@@ -75,6 +80,30 @@ router.put('/profile', async (req, res) => {
       if (req.body[key] !== undefined) {
         updates[key] = req.body[key];
       }
+    }
+
+    if (updates.email !== undefined) {
+      const email = normalizeEmail(updates.email);
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid email address'
+        });
+      }
+
+      const [existingUser, existingProfile] = await Promise.all([
+        User.findOne({ email, _id: { $ne: req.user.id } }),
+        SitterProfile.findOne({ email, userId: { $ne: req.user.id } })
+      ]);
+
+      if (existingUser || existingProfile) {
+        return res.status(400).json({
+          success: false,
+          message: 'That email address is already in use'
+        });
+      }
+
+      updates.email = email;
     }
 
     const profile = await SitterProfile.findOneAndUpdate(
@@ -90,9 +119,26 @@ router.put('/profile', async (req, res) => {
       });
     }
 
+    const userUpdates = {};
+    if (updates.email !== undefined) userUpdates.email = updates.email;
+    if (updates.firstName !== undefined) userUpdates.firstName = updates.firstName;
+    if (updates.lastName !== undefined) userUpdates.lastName = updates.lastName;
+    if (updates.phone !== undefined) userUpdates.phone = updates.phone;
+
+    const user = Object.keys(userUpdates).length
+      ? await User.findByIdAndUpdate(req.user.id, userUpdates, { new: true, runValidators: true }).select('email firstName lastName role')
+      : await User.findById(req.user.id).select('email firstName lastName role');
+
     res.json({
       success: true,
-      profile
+      profile,
+      user: user ? {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      } : undefined
     });
   } catch (error) {
     console.error('Update sitter profile error:', error);

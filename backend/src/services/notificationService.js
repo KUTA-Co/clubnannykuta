@@ -76,18 +76,25 @@ async function createInApp(userId, { type, title, body, link, dedupeKey }) {
 /**
  * A new job was posted — alert every active sitter in the request's area.
  */
-async function notifyNewJob(request) {
+async function notifyNewJob(request, options = {}) {
   try {
+    const excludeSitterIds = new Set(
+      (options.excludeSitterIds || []).map((id) => String(id))
+    );
     // Notify active sitters in the request's area (same city/state OR shared ZIP prefix)
     const sitterQuery = { status: 'active', membershipStatus: 'active' };
     const areaOr = areaMatchConditions(request);
     if (areaOr) sitterQuery.$or = areaOr;
 
     const sitters = await SitterProfile.find(sitterQuery);
+    const recipients = sitters.filter((sitter) => !excludeSitterIds.has(String(sitter._id)));
     const dateLabel = formatJobDate(request.date);
     const body = `${dateLabel} • ${request.city}, ${request.state} • ${formatTimeRange(request)}`;
+    const title = options.title || 'New Babysitting Request Near You';
+    const notificationType = options.type || 'new_job';
+    const dedupePrefix = options.dedupeKeyPrefix || `new_job:${request._id}`;
 
-    await Promise.all(sitters.map(async (sitter) => {
+    await Promise.all(recipients.map(async (sitter) => {
       await safeEmail(emailService.sendNewJobAlert({
         to: sitter.email,
         sitterName: sitter.firstName,
@@ -101,18 +108,18 @@ async function notifyNewJob(request) {
       }));
 
       await safePush(sitter.userId, {
-        title: 'New Babysitting Request Near You',
+        title,
         body,
         url: `/sitting/sitter/jobs/${request._id}`,
         tag: `job-${request._id}`
       });
 
       await createInApp(sitter.userId, {
-        type: 'new_job',
-        title: 'New Babysitting Request Near You',
+        type: notificationType,
+        title,
         body,
         link: `/sitting/sitter/jobs/${request._id}`,
-        dedupeKey: `new_job:${request._id}:sitter:${sitter.userId}`
+        dedupeKey: `${dedupePrefix}:sitter:${sitter.userId}`
       });
     }));
   } catch (error) {
@@ -221,10 +228,12 @@ async function notifyBookingConfirmed(request, sitter, family) {
 /**
  * Family cancelled a confirmed booking — notify the sitter.
  */
-async function notifyBookingCancelledToSitter(request, sitter) {
+async function notifyBookingCancelledToSitter(request, sitter, options = {}) {
   try {
     const dateLabel = formatJobDate(request.date);
     const timeRange = formatTimeRange(request);
+    const reason = options.reason || request.cancellationReason || '';
+    const reasonText = reason ? ` Reason: ${reason}` : '';
 
     await safeEmail(emailService.sendBookingCancelled({
       to: sitter.email,
@@ -232,12 +241,13 @@ async function notifyBookingCancelledToSitter(request, sitter) {
       by: 'family',
       date: request.date,
       startTime: request.startTime,
-      endTime: request.endTime
+      endTime: request.endTime,
+      reason
     }));
 
     await safePush(sitter.userId, {
       title: 'Booking Cancelled',
-      body: `The family cancelled your ${dateLabel}, ${timeRange} booking`,
+      body: `The family cancelled your ${dateLabel}, ${timeRange} booking.${reasonText}`,
       url: '/sitting/sitter/bookings',
       tag: `cancelled-${request._id}`
     });
@@ -245,7 +255,7 @@ async function notifyBookingCancelledToSitter(request, sitter) {
     await createInApp(sitter.userId, {
       type: 'cancelled',
       title: 'Booking Cancelled',
-      body: `The family cancelled your ${dateLabel}, ${timeRange} booking`,
+      body: `The family cancelled your ${dateLabel}, ${timeRange} booking.${reasonText}`,
       link: '/sitting/sitter/bookings',
       dedupeKey: `cancelled:${request._id}:sitter:${sitter.userId}`
     });

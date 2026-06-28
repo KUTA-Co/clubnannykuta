@@ -35,6 +35,15 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'Leigh@clubnanny.com')
   .map(email => email.trim())
   .filter(Boolean);
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Base email template wrapper with Club Nanny branding
 const baseTemplate = (content) => `<!DOCTYPE html>
 <html lang="en">
@@ -1100,12 +1109,25 @@ class EmailService {
           Dear ${name},
         </p>
         <p class="message">
-          Your Club Nanny sitter application has been approved. Your journey with us can start!
+          Your Club Nanny sitter application has been approved. You can now open the Club Nanny web app, finish setting up your profile, and start browsing available sitter jobs.
         </p>
 
         <center>
-          <a href="${appUrl}" class="cta-button">Open Club Nanny</a>
+          <a href="${appUrl}" class="cta-button">Open the Club Nanny Web App</a>
         </center>
+
+        <div class="highlight-box">
+          <h3>How to download the app</h3>
+          <p>Club Nanny is a web app. You do not download it from the App Store or Google Play.</p>
+          <p>Open this link in your browser: <a href="${appUrl}" style="color: #8BA99E;">${appUrl}</a></p>
+          <p>On iPhone or iPad, tap the Share button and choose <strong>Add to Home Screen</strong>. On Android, Chrome, Edge, or desktop, use the browser menu or install icon and choose <strong>Install</strong> or <strong>Add to Home screen</strong>.</p>
+        </div>
+
+        <div class="highlight-box">
+          <h3>Turn on notifications</h3>
+          <p>After logging in, go to <strong>My Profile</strong> and enable Club Nanny push notifications. Please make sure browser notifications are allowed for Club Nanny.</p>
+          <p>You can use the <strong>Test Notification</strong> button in the app to confirm notifications are working on your device.</p>
+        </div>
 
         <p class="help-text">
           Questions? Contact us at <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
@@ -1856,18 +1878,22 @@ class EmailService {
    * `by` is 'family' or 'sitter'.
    */
   async sendBookingCancelled(data) {
-    const { to, recipientName, by, date, startTime, endTime } = data;
+    const { to, recipientName, by, date, startTime, endTime, reason } = data;
     const dateLabel = formatBookingDate(date);
     const whoCancelled = by === 'sitter' ? 'The sitter' : 'The family';
     const followUp = by === 'sitter'
       ? 'Your request has been reopened so other sitters in your area can respond.'
       : 'No further action is needed.';
+    const reasonHtml = reason
+      ? `<div class="highlight-box"><h3>Cancellation Reason</h3><p>${escapeHtml(reason)}</p></div>`
+      : '';
 
     const html = baseTemplate(`
       <div class="email-body">
         <h1 class="greeting">Booking Cancelled</h1>
         <p class="message">Hi ${recipientName || 'there'},</p>
         <p class="message">${whoCancelled} cancelled the booking scheduled for <strong>${dateLabel}</strong> (${startTime} - ${endTime}). ${followUp}</p>
+        ${reasonHtml}
       </div>
     `);
 

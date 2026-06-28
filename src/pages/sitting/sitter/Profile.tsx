@@ -19,6 +19,7 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   age: z.coerce.number().min(16).max(100),
   bio: z.string().optional(),
@@ -49,7 +50,7 @@ interface SitterReview {
 }
 
 export default function SitterProfile() {
-  const { token } = useAuth();
+  const { token, user, updateUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,6 +78,7 @@ export default function SitterProfile() {
         form.reset({
           firstName: data.profile.firstName,
           lastName: data.profile.lastName,
+          email: data.profile.email || '',
           phone: data.profile.phone || '',
           age: data.profile.age || 18,
           bio: data.profile.bio || '',
@@ -156,6 +158,16 @@ export default function SitterProfile() {
 
       if (result.success) {
         setProfile(result.profile);
+        if (result.user) {
+          updateUser(result.user);
+        } else if (user) {
+          updateUser({
+            ...user,
+            email: result.profile.email,
+            firstName: result.profile.firstName,
+            lastName: result.profile.lastName
+          });
+        }
         toast({
           title: "Profile Updated",
           description: "Your profile has been saved successfully."
@@ -281,6 +293,19 @@ export default function SitterProfile() {
                     <p className="text-red-500 text-sm mt-1">{form.formState.errors.lastName.message}</p>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...form.register("email")}
+                  className="mt-1"
+                />
+                {form.formState.errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.email.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

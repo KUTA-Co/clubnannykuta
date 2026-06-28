@@ -165,6 +165,44 @@ router.post('/sitters/:id/send-confirmation', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/sitting/sitters/:id/send-approval
+ * Resend sitter approval email with web app download and notification instructions
+ */
+router.post('/sitters/:id/send-approval', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    if (sitter.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Approval email can only be sent to approved active sitters'
+      });
+    }
+
+    const result = await emailService.sendSitterApprovalEmail(sitter.toObject());
+
+    res.json({
+      success: Boolean(result?.success),
+      message: result?.success ? 'Approval email sent' : 'Failed to send approval email',
+      result
+    });
+  } catch (error) {
+    console.error('Resend sitter approval error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send approval email'
+    });
+  }
+});
+
+/**
  * GET /api/admin/sitting/sitters/:id/reviews
  * Get reviews for a sitter
  */

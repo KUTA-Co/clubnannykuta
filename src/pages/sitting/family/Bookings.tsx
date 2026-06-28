@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, User, Phone, Mail, Check, Star, Loader2, List, CalendarDays, RotateCcw, X } from "lucide-react";
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
@@ -131,6 +132,10 @@ export default function FamilyBookings() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [cancellingBooking, setCancellingBooking] = useState<Booking | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [notifyOtherSitters, setNotifyOtherSitters] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   // Review state
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
@@ -227,6 +232,53 @@ export default function FamilyBookings() {
     }
   };
 
+  const openCancelBooking = (booking: Booking) => {
+    setCancellingBooking(booking);
+    setCancelReason('');
+    setNotifyOtherSitters(true);
+  };
+
+  const closeCancelBooking = () => {
+    setCancellingBooking(null);
+    setCancelReason('');
+    setNotifyOtherSitters(true);
+  };
+
+  const submitCancellation = async () => {
+    if (!cancellingBooking) return;
+    const reason = cancelReason.trim();
+    if (!reason) {
+      toast({ title: 'Reason required', description: 'Please enter a reason for cancellation.', variant: 'destructive' });
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      const res = await fetch(`${API_URL}/api/sitting/family/bookings/${cancellingBooking._id}/cancel-sitter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reason, notifyOtherSitters })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: 'Booking cancelled',
+          description: notifyOtherSitters
+            ? 'The sitter has been notified and the request is available again.'
+            : 'The sitter has been notified and the request has been closed.'
+        });
+        closeCancelBooking();
+        await fetchBookings();
+      } else {
+        toast({ title: 'Error', description: data.message || 'Failed to cancel booking', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const openReview = (id: string) => {
     setReviewingId(id);
     setReviewRating(0);
@@ -317,6 +369,69 @@ export default function FamilyBookings() {
 
   return (
     <div>
+      {cancellingBooking && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-[#4A4A4A]">Are you sure you want to cancel this sitter job?</h2>
+                <p className="text-sm text-[#4A4A4A]/60">
+                  {cancellingBooking.confirmedSitterId?.firstName} {cancellingBooking.confirmedSitterId?.lastName} will be notified.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCancelBooking}
+                aria-label="Close cancellation"
+                className="rounded-full p-1 text-[#4A4A4A]/50 hover:bg-gray-100 hover:text-[#4A4A4A]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="cancelReason" className="text-sm font-medium text-[#4A4A4A]">
+                  Insert reason for cancellation <span className="text-red-600">required</span>
+                </label>
+                <p className="mb-2 text-xs text-[#4A4A4A]/55">The sitter will see this.</p>
+                <Textarea
+                  id="cancelReason"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={4}
+                  placeholder="Briefly explain why this sitter job is being cancelled..."
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl bg-[#F5D5E5]/45 p-3">
+                <div>
+                  <p className="text-sm font-medium text-[#4A4A4A]">Notify other sitters that the job is available again?</p>
+                  <p className="text-xs text-[#4A4A4A]/55">
+                    {notifyOtherSitters ? 'Yes, the job will reopen for other sitters.' : 'No, the job will be closed.'}
+                  </p>
+                </div>
+                <Switch checked={notifyOtherSitters} onCheckedChange={setNotifyOtherSitters} />
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <Button onClick={closeCancelBooking} size="sm" variant="outline" className="flex-1" disabled={cancelling}>
+                  No, don't cancel
+                </Button>
+                <Button
+                  onClick={submitCancellation}
+                  disabled={cancelling || !cancelReason.trim()}
+                  size="sm"
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                >
+                  {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, cancel'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {reviewingBooking && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
@@ -470,15 +585,26 @@ export default function FamilyBookings() {
 
                         {/* Mark complete (upcoming/confirmed) */}
                         {activeTab === 'upcoming' && (
-                          <Button
-                            onClick={() => handleComplete(booking._id)}
-                            disabled={actioningId === booking._id}
-                            size="sm"
-                            style={{ backgroundColor: '#C77DA3' }}
-                            className="text-white hover:opacity-90"
-                          >
-                            {actioningId === booking._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Mark Complete</>}
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              onClick={() => handleComplete(booking._id)}
+                              disabled={actioningId === booking._id}
+                              size="sm"
+                              style={{ backgroundColor: '#C77DA3' }}
+                              className="text-white hover:opacity-90"
+                            >
+                              {actioningId === booking._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" /> Mark Complete</>}
+                            </Button>
+                            <Button
+                              onClick={() => openCancelBooking(booking)}
+                              disabled={actioningId === booking._id}
+                              size="sm"
+                              variant="outline"
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              Cancel Sitter
+                            </Button>
+                          </div>
                         )}
 
                         {booking.payment?.status === 'paid' && (

@@ -21,6 +21,7 @@ const childSchema = z.object({
 
 const profileSchema = z.object({
   householdName: z.string().min(1, "Household name is required"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
@@ -35,7 +36,7 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function FamilyProfile() {
-  const { token } = useAuth();
+  const { token, user, updateUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,6 +70,7 @@ export default function FamilyProfile() {
         setRating({ averageRating: profile.averageRating || 0, reviewCount: profile.reviewCount || 0 });
         form.reset({
           householdName: profile.householdName,
+          email: profile.email || '',
           phone: profile.phone || '',
           address: profile.address || '',
           city: profile.city,
@@ -98,6 +100,7 @@ export default function FamilyProfile() {
         },
         body: JSON.stringify({
           householdName: data.householdName,
+          email: data.email,
           phone: data.phone,
           address: data.address,
           city: data.city,
@@ -115,6 +118,16 @@ export default function FamilyProfile() {
       const result = await response.json();
 
       if (result.success) {
+        if (result.user) {
+          updateUser(result.user);
+        } else if (user) {
+          updateUser({
+            ...user,
+            email: result.profile.email,
+            firstName: result.profile.householdName,
+            lastName: ''
+          });
+        }
         toast({
           title: "Profile Updated",
           description: "Your profile has been saved successfully."
@@ -174,6 +187,19 @@ export default function FamilyProfile() {
                 />
                 {form.formState.errors.householdName && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.householdName.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...form.register("email")}
+                  className="mt-1"
+                />
+                {form.formState.errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.email.message}</p>
                 )}
               </div>
 

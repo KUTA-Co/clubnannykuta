@@ -404,15 +404,19 @@ router.post('/complete/family', async (req, res) => {
         email: email.toLowerCase(),
         password,
         role: 'family',
-        serviceType: 'sitting'
+        serviceType: 'sitting',
+        firstName: householdName,
+        phone: phone || ''
       });
       isNewUser = true;
     } else {
       // Update existing user
       if (user.serviceType === 'nanny') {
         user.serviceType = 'both';
-        await user.save();
       }
+      if (!user.firstName) user.firstName = householdName;
+      if (phone && !user.phone) user.phone = phone;
+      await user.save();
     }
 
     // Idempotency: if this user already has a sitting family profile, return it
@@ -688,14 +692,18 @@ router.post('/register-test/family', async (req, res) => {
         email: email.toLowerCase(),
         password,
         role: 'family',
-        serviceType: 'sitting'
+        serviceType: 'sitting',
+        firstName: householdName,
+        phone: phone || ''
       });
     } else {
       // Update existing user
       if (user.serviceType === 'nanny') {
         user.serviceType = 'both';
-        await user.save();
       }
+      if (!user.firstName) user.firstName = householdName;
+      if (phone && !user.phone) user.phone = phone;
+      await user.save();
     }
 
     // Create sitting family profile

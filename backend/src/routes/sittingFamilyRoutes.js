@@ -5,7 +5,8 @@ import {
   BookingRequest,
   SitterResponse,
   SitterProfile,
-  Review
+  Review,
+  User
 } from '../models/index.js';
 import matchingService from '../services/matchingService.js';
 import notificationService from '../services/notificationService.js';
@@ -17,6 +18,10 @@ function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
 }
 
 function dateInputValue(dateValue) {
@@ -145,7 +150,7 @@ router.get('/profile', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     const allowedUpdates = [
-      'householdName', 'phone', 'children',
+      'householdName', 'email', 'phone', 'children',
       'address', 'city', 'state', 'postalCode', 'emergencyContact'
     ];
 
@@ -154,6 +159,30 @@ router.put('/profile', async (req, res) => {
       if (req.body[key] !== undefined) {
         updates[key] = req.body[key];
       }
+    }
+
+    if (updates.email !== undefined) {
+      const email = normalizeEmail(updates.email);
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid email address'
+        });
+      }
+
+      const [existingUser, existingProfile] = await Promise.all([
+        User.findOne({ email, _id: { $ne: req.user.id } }),
+        SittingFamilyProfile.findOne({ email, userId: { $ne: req.user.id } })
+      ]);
+
+      if (existingUser || existingProfile) {
+        return res.status(400).json({
+          success: false,
+          message: 'That email address is already in use'
+        });
+      }
+
+      updates.email = email;
     }
 
     const profile = await SittingFamilyProfile.findOneAndUpdate(
@@ -169,9 +198,28 @@ router.put('/profile', async (req, res) => {
       });
     }
 
+    const userUpdates = {};
+    if (updates.email !== undefined) userUpdates.email = updates.email;
+    if (updates.householdName !== undefined) {
+      userUpdates.firstName = updates.householdName;
+      userUpdates.lastName = '';
+    }
+    if (updates.phone !== undefined) userUpdates.phone = updates.phone;
+
+    const user = Object.keys(userUpdates).length
+      ? await User.findByIdAndUpdate(req.user.id, userUpdates, { new: true, runValidators: true }).select('email firstName lastName role')
+      : await User.findById(req.user.id).select('email firstName lastName role');
+
     res.json({
       success: true,
-      profile
+      profile,
+      user: user ? {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      } : undefined
     });
   } catch (error) {
     console.error('Update sitting family profile error:', error);
@@ -542,7 +590,7 @@ router.delete('/requests/:id', async (req, res) => {
     if (previouslyConfirmedSitterId) {
       const sitter = await SitterProfile.findById(previouslyConfirmedSitterId);
       if (sitter) {
-        await notificationService.notifyBookingCancelledToSitter(request, sitter);
+        await notificationService.notifyBookingCancelledToSitter(request, sitter, { reason: request.cancellationReason });
       }
     }
 
@@ -736,6 +784,104 @@ router.get('/bookings', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get bookings'
+    });
+  }
+});
+
+/**
+ * POST /api/sitting/family/bookings/:id/cancel-sitter
+ * Family cancels the confirmed sitter for a booking. The family must provide a
+ * reason, and may choose whether the request should reopen for other sitters.
+ */
+router.post('/bookings/:id/cancel-sitter', async (req, res) => {
+  try {
+    const profile = await SittingFamilyProfile.findOne({ userId: req.user.id });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Family profile not found'
+      });
+    }
+
+    const reason = String(req.body.reason || '').trim();
+    const notifyOtherSitters = Boolean(req.body.notifyOtherSitters);
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation reason is required'
+      });
+    }
+
+    const booking = await BookingRequest.findOne({
+      _id: req.params.id,
+      familyId: profile._id
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.status !== 'confirmed' || !booking.confirmedSitterId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only confirmed sitter bookings can be cancelled'
+      });
+    }
+
+    const cancelledSitterId = booking.confirmedSitterId;
+    const sitter = await SitterProfile.findById(cancelledSitterId);
+
+    booking.status = notifyOtherSitters ? 'open' : 'cancelled';
+    booking.confirmedSitterId = null;
+    booking.confirmedAt = null;
+    booking.cancelledAt = new Date();
+    booking.cancellationReason = reason;
+    await booking.save();
+
+    await SitterResponse.findOneAndUpdate(
+      { requestId: booking._id, sitterId: cancelledSitterId },
+      { status: 'withdrawn', withdrawnAt: new Date() }
+    );
+
+    if (notifyOtherSitters) {
+      await matchingService.syncRequestResponseStatus(booking);
+    } else {
+      await SitterResponse.updateMany(
+        { requestId: booking._id, status: 'interested' },
+        { status: 'not_selected' }
+      );
+    }
+
+    if (sitter) {
+      await notificationService.notifyBookingCancelledToSitter(booking, sitter, { reason });
+    }
+
+    if (notifyOtherSitters) {
+      await notificationService.notifyNewJob(booking, {
+        excludeSitterIds: [cancelledSitterId],
+        title: 'Babysitting Request Available Again',
+        type: 'job_reopened',
+        dedupeKeyPrefix: `job_reopened:${booking._id}:${Date.now()}`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: notifyOtherSitters
+        ? 'Sitter cancelled and request reopened for other sitters'
+        : 'Sitter cancelled and request closed',
+      booking
+    });
+  } catch (error) {
+    console.error('Family cancel sitter booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel sitter booking'
     });
   }
 });
