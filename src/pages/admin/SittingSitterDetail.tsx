@@ -14,7 +14,17 @@ interface Sitter {
   bio?: string;
   experience?: string;
   age?: number;
+  howDidYouHear?: string;
   hourlyRate?: number;
+  hourlyRate1Kid?: number;
+  hourlyRate2Kids?: number;
+  hourlyRate3PlusKids?: number;
+  yearsOfExperience?: string;
+  ageGroupsWorkedWith?: string;
+  typesOfExperience?: string;
+  faithJourney?: string;
+  whyCalledToServe?: string;
+  specialSkills?: string;
   city: string;
   state: string;
   postalCode?: string;
@@ -56,7 +66,6 @@ export default function SittingSitterDetail() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [sendingConfirmation, setSendingConfirmation] = useState(false);
-  const [sendingApproval, setSendingApproval] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   const fetchSitter = async () => {
@@ -88,7 +97,7 @@ export default function SittingSitterDetail() {
       const res = await authFetch(`/api/admin/sitting/sitters/${id}/send-confirmation`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast({ title: "Confirmation Sent", description: `Confirmation email sent to ${sitter?.firstName}` });
+        toast({ title: "Email Sent", description: data.message || `Email sent to ${sitter?.firstName}` });
       } else {
         toast({ title: "Error", description: data.message || "Failed to send confirmation email", variant: "destructive" });
       }
@@ -96,23 +105,6 @@ export default function SittingSitterDetail() {
       toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
     } finally {
       setSendingConfirmation(false);
-    }
-  };
-
-  const sendApprovalEmail = async () => {
-    setSendingApproval(true);
-    try {
-      const res = await authFetch(`/api/admin/sitting/sitters/${id}/send-approval`, { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        toast({ title: "Approval Sent", description: `Approval email sent to ${sitter?.firstName}` });
-      } else {
-        toast({ title: "Error", description: data.message || "Failed to send approval email", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to send approval email", variant: "destructive" });
-    } finally {
-      setSendingApproval(false);
     }
   };
 
@@ -188,6 +180,16 @@ export default function SittingSitterDetail() {
   const visibleBio = sitter.bio && sitter.bio.trim() !== (sitter.experience || "").trim()
     ? sitter.bio
     : undefined;
+  const hasProfileDetails = Boolean(
+    visibleBio ||
+    sitter.experience ||
+    sitter.yearsOfExperience ||
+    sitter.ageGroupsWorkedWith ||
+    sitter.typesOfExperience ||
+    sitter.faithJourney ||
+    sitter.whyCalledToServe ||
+    sitter.specialSkills
+  );
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -211,12 +213,6 @@ export default function SittingSitterDetail() {
           {sendingConfirmation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
           Send Confirmation Email
         </Button>
-        {sitter.status === "active" && (
-          <Button onClick={sendApprovalEmail} disabled={sendingApproval} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
-            {sendingApproval ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-            Send Approval Email
-          </Button>
-        )}
         {sitter.status === "pending_approval" && (
           <>
             <Button onClick={() => doAction("approve")} disabled={acting} className="bg-green-600 hover:bg-green-700">
@@ -243,10 +239,15 @@ export default function SittingSitterDetail() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-2">
           <h3 className="font-semibold text-[#1A1A1A] mb-2">Profile</h3>
+          <Row label="Email" value={sitter.email} />
+          <Row label="Phone" value={sitter.phone} />
           <Row label="Age" value={sitter.age?.toString()} />
-          <Row label="Hourly Rate" value={sitter.hourlyRate != null ? `$${sitter.hourlyRate}` : undefined} />
+          <Row label="Rate - 1 child" value={sitter.hourlyRate1Kid != null ? `$${sitter.hourlyRate1Kid}/hour` : sitter.hourlyRate != null ? `$${sitter.hourlyRate}/hour` : undefined} />
+          <Row label="Rate - 2 children" value={sitter.hourlyRate2Kids != null ? `$${sitter.hourlyRate2Kids}/hour` : undefined} />
+          <Row label="Rate - 3+ children" value={sitter.hourlyRate3PlusKids != null ? `$${sitter.hourlyRate3PlusKids}/hour` : undefined} />
           <Row label="Location" value={`${sitter.city}, ${sitter.state} ${sitter.postalCode || ""}`} />
           <Row label="Radius" value={sitter.preferredRadius ? `${sitter.preferredRadius} mi` : undefined} />
+          <Row label="Found us through" value={sitter.howDidYouHear} />
           <Row label="Membership" value={sitter.membershipStatus} />
           <Row label="Application fee" value={sitter.applicationFeeAmountCents ? `$${(sitter.applicationFeeAmountCents / 100).toFixed(2)} paid` : undefined} />
           <Row label="First month fee" value={sitter.membershipFeeAmountCents ? `$${(sitter.membershipFeeAmountCents / 100).toFixed(2)}` : undefined} />
@@ -267,20 +268,19 @@ export default function SittingSitterDetail() {
         </div>
       </div>
 
-      {(visibleBio || sitter.experience) && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-          {visibleBio && (
-            <div>
-              <h3 className="font-semibold text-[#1A1A1A] mb-1">Bio</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{visibleBio}</p>
-            </div>
-          )}
-          {sitter.experience && (
-            <div>
-              <h3 className="font-semibold text-[#1A1A1A] mb-1">Experience</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{sitter.experience}</p>
-            </div>
-          )}
+      {hasProfileDetails && (
+        <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+          <h3 className="font-semibold text-[#1A1A1A]">Profile Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Row label="Years experience" value={sitter.yearsOfExperience} />
+            <Row label="Age groups" value={sitter.ageGroupsWorkedWith} />
+            <Row label="Experience types" value={sitter.typesOfExperience} />
+          </div>
+          <TextBlock title="Bio" value={visibleBio} />
+          <TextBlock title="Experience" value={sitter.experience} />
+          <TextBlock title="Faith Journey" value={sitter.faithJourney} />
+          <TextBlock title="Why Called to Serve" value={sitter.whyCalledToServe} />
+          <TextBlock title="Special Skills" value={sitter.specialSkills} />
         </div>
       )}
 
@@ -323,12 +323,22 @@ export default function SittingSitterDetail() {
   );
 }
 
-function Row({ label, value }: { label: string; value?: string }) {
+function Row({ label, value }: { label: string; value?: string | number }) {
   if (!value) return null;
   return (
     <div className="flex justify-between text-sm">
       <span className="text-gray-500">{label}</span>
-      <span className="text-[#1A1A1A] font-medium capitalize">{value}</span>
+      <span className="text-right text-[#1A1A1A] font-medium">{value}</span>
+    </div>
+  );
+}
+
+function TextBlock({ title, value }: { title: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div>
+      <h4 className="font-semibold text-[#1A1A1A] mb-1">{title}</h4>
+      <p className="text-sm text-gray-600 whitespace-pre-wrap">{value}</p>
     </div>
   );
 }

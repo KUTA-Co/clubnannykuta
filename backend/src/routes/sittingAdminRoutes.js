@@ -148,11 +148,32 @@ router.post('/sitters/:id/send-confirmation', async (req, res) => {
       });
     }
 
-    const result = await emailService.sendSitterApplicationSubmittedToApplicant(sitter.toObject());
+    let result;
+    let emailType = 'confirmation';
+
+    if (sitter.status === 'active') {
+      result = await emailService.sendSitterApprovalEmail(sitter.toObject());
+      emailType = 'approval';
+    } else if (sitter.status === 'rejected') {
+      result = await emailService.sendSitterRejectionEmail(sitter.toObject(), {
+        membershipRefunded: Boolean(sitter.membershipFeeRefundedAt)
+      });
+      emailType = 'rejection';
+    } else if (['pending_payment', 'pending_approval'].includes(sitter.status)) {
+      result = await emailService.sendSitterApplicationSubmittedToApplicant(sitter.toObject());
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: `No manual confirmation email is configured for ${sitter.status.replace(/_/g, ' ')} sitters`
+      });
+    }
 
     res.json({
       success: Boolean(result?.success),
-      message: result?.success ? 'Confirmation email sent' : 'Failed to send confirmation email',
+      message: result?.success
+        ? `${emailType.charAt(0).toUpperCase() + emailType.slice(1)} email sent`
+        : `Failed to send ${emailType} email`,
+      emailType,
       result
     });
   } catch (error) {

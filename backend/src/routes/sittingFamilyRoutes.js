@@ -161,6 +161,14 @@ router.put('/profile', async (req, res) => {
       }
     }
 
+    if (Array.isArray(updates.children)) {
+      updates.numberOfChildren = updates.children.length;
+      updates.childrenAges = updates.children
+        .map((child) => child?.age)
+        .filter((age) => age !== undefined && age !== null && age !== '')
+        .join(', ');
+    }
+
     if (updates.email !== undefined) {
       const email = normalizeEmail(updates.email);
       if (!/^\S+@\S+\.\S+$/.test(email)) {

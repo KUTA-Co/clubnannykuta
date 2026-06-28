@@ -10,9 +10,28 @@ interface SittingFamily {
   householdName: string;
   email: string;
   phone?: string;
+  address?: string;
   city: string;
   state: string;
+  postalCode?: string;
   numberOfChildren?: number;
+  children?: Array<{
+    name?: string;
+    age?: number;
+    specialNeeds?: string;
+  }>;
+  childrenAges?: string;
+  specialNeeds?: string;
+  howDidYouHear?: string;
+  faithBackground?: string;
+  familyValues?: string;
+  emergencyContact?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
+  averageRating?: number;
+  reviewCount?: number;
   membershipStatus: string;
   status: string;
   createdAt: string;
@@ -30,6 +49,7 @@ export default function SittingFamilies() {
   const [families, setFamilies] = useState<SittingFamily[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingConfirmationId, setSendingConfirmationId] = useState<string | null>(null);
+  const [expandedFamilyId, setExpandedFamilyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0 });
@@ -84,7 +104,7 @@ export default function SittingFamilies() {
       const res = await authFetch(`/api/admin/sitting/families/${family._id}/send-confirmation`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast({ title: "Confirmation Sent", description: `Confirmation email sent to ${family.householdName}` });
+        toast({ title: "Email Sent", description: data.message || `Confirmation email sent to ${family.householdName}` });
       } else {
         throw new Error(data.message);
       }
@@ -164,44 +184,126 @@ export default function SittingFamilies() {
           {families.map((family) => {
             const style = statusStyles[family.status] || { bg: "#EEE", color: "#555" };
             return (
-              <div key={family._id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                <div>
-                  <p className="font-semibold text-[#1A1A1A]">{family.householdName}</p>
-                  <p className="text-sm text-gray-500">{family.email}</p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                    <MapPin className="w-3 h-3" />
-                    {family.city}, {family.state}
-                    {family.numberOfChildren ? ` • ${family.numberOfChildren} children` : ""}
-                  </p>
+              <div key={family._id}>
+                <div className="flex flex-col gap-4 p-4 hover:bg-gray-50 transition-colors lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-semibold text-[#1A1A1A]">{family.householdName}</p>
+                    <p className="text-sm text-gray-500">{family.email}{family.phone ? ` • ${family.phone}` : ""}</p>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                      <MapPin className="w-3 h-3" />
+                      {family.city}, {family.state}
+                      {family.numberOfChildren ? ` • ${family.numberOfChildren} children` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-gray-400">{formatDate(family.createdAt)}</span>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-medium capitalize"
+                      style={{ backgroundColor: style.bg, color: style.color }}
+                    >
+                      {family.status.replace(/_/g, " ")}
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium capitalize bg-[#F5D5E5] text-[#9B5A80]">
+                      {family.membershipStatus}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setExpandedFamilyId(expandedFamilyId === family._id ? null : family._id)}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                    >
+                      {expandedFamilyId === family._id ? "Hide Details" : "View Details"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => sendConfirmationEmail(family)}
+                      disabled={sendingConfirmationId === family._id}
+                      className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10"
+                    >
+                      {sendingConfirmationId === family._id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                      Send Confirmation Email
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-gray-400">{formatDate(family.createdAt)}</span>
-                  <span
-                    className="px-3 py-1 rounded-full text-xs font-medium capitalize"
-                    style={{ backgroundColor: style.bg, color: style.color }}
-                  >
-                    {family.status.replace(/_/g, " ")}
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium capitalize bg-[#F5D5E5] text-[#9B5A80]">
-                    {family.membershipStatus}
-                  </span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => sendConfirmationEmail(family)}
-                    disabled={sendingConfirmationId === family._id}
-                    className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10"
-                  >
-                    {sendingConfirmationId === family._id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
-                    Send Confirmation Email
-                  </Button>
-                </div>
+                {expandedFamilyId === family._id && <FamilyDetails family={family} />}
               </div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function FamilyDetails({ family }: { family: SittingFamily }) {
+  const children = family.children || [];
+  const address = [family.address, family.city, family.state, family.postalCode].filter(Boolean).join(", ");
+  return (
+    <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="rounded-xl bg-white p-4 border border-gray-100">
+          <h3 className="font-semibold text-[#1A1A1A] mb-3">Household</h3>
+          <DetailRow label="Household" value={family.householdName} />
+          <DetailRow label="Email" value={family.email} />
+          <DetailRow label="Phone" value={family.phone} />
+          <DetailRow label="Address" value={address} />
+          <DetailRow label="Found us through" value={family.howDidYouHear} />
+          <DetailRow label="Rating" value={family.reviewCount ? `${family.averageRating?.toFixed(1)} (${family.reviewCount} reviews)` : "No reviews yet"} />
+        </div>
+
+        <div className="rounded-xl bg-white p-4 border border-gray-100">
+          <h3 className="font-semibold text-[#1A1A1A] mb-3">Children</h3>
+          {children.length ? (
+            <div className="space-y-2">
+              {children.map((child, index) => (
+                <div key={`${child.name || "child"}-${index}`} className="rounded-lg border border-gray-100 p-3 text-sm">
+                  <p className="font-medium text-[#1A1A1A]">{child.name || `Child ${index + 1}`}</p>
+                  <p className="text-gray-500">Age: {child.age ?? "Not provided"}</p>
+                  {child.specialNeeds && <p className="mt-1 text-gray-600">Special needs: {child.specialNeeds}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <DetailRow label="Children count" value={family.numberOfChildren?.toString()} />
+              <DetailRow label="Ages" value={family.childrenAges} />
+              <DetailRow label="Special needs" value={family.specialNeeds} />
+            </>
+          )}
+        </div>
+
+        <div className="rounded-xl bg-white p-4 border border-gray-100">
+          <h3 className="font-semibold text-[#1A1A1A] mb-3">Emergency & Values</h3>
+          <DetailRow label="Emergency contact" value={family.emergencyContact?.name} />
+          <DetailRow label="Emergency phone" value={family.emergencyContact?.phone} />
+          <DetailRow label="Relationship" value={family.emergencyContact?.relationship} />
+          <TextDetail title="Faith Background" value={family.faithBackground} />
+          <TextDetail title="Family Values" value={family.familyValues} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div className="mb-2 text-sm">
+      <span className="text-gray-500">{label}: </span>
+      <span className="font-medium text-[#1A1A1A]">{value}</span>
+    </div>
+  );
+}
+
+function TextDetail({ title, value }: { title: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-sm font-medium text-[#1A1A1A]">{title}</p>
+      <p className="whitespace-pre-wrap text-sm text-gray-600">{value}</p>
     </div>
   );
 }
