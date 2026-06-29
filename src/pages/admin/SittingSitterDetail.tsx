@@ -66,6 +66,7 @@ export default function SittingSitterDetail() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [sendingConfirmation, setSendingConfirmation] = useState(false);
+  const [sendingApproval, setSendingApproval] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   const fetchSitter = async () => {
@@ -105,6 +106,23 @@ export default function SittingSitterDetail() {
       toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
     } finally {
       setSendingConfirmation(false);
+    }
+  };
+
+  const sendApprovalEmail = async () => {
+    setSendingApproval(true);
+    try {
+      const res = await authFetch(`/api/admin/sitting/sitters/${id}/send-approval`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Email Sent", description: data.message || `Approved email sent to ${sitter?.firstName}` });
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to send approved email", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to send approved email", variant: "destructive" });
+    } finally {
+      setSendingApproval(false);
     }
   };
 
@@ -209,10 +227,18 @@ export default function SittingSitterDetail() {
 
       {/* Action buttons by status */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={sendConfirmationEmail} disabled={sendingConfirmation} variant="outline" className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10">
-          {sendingConfirmation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-          Send Confirmation Email
-        </Button>
+        {sitter.status !== "rejected" && (
+          <Button onClick={sendConfirmationEmail} disabled={sendingConfirmation} variant="outline" className="border-[#8BA99E] text-[#8BA99E] hover:bg-[#8BA99E]/10">
+            {sendingConfirmation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+            Send Application Confirmation
+          </Button>
+        )}
+        {sitter.status === "active" && (
+          <Button onClick={sendApprovalEmail} disabled={sendingApproval} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+            {sendingApproval ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+            Send Application Approved Email
+          </Button>
+        )}
         {sitter.status === "pending_approval" && (
           <>
             <Button onClick={() => doAction("approve")} disabled={acting} className="bg-green-600 hover:bg-green-700">

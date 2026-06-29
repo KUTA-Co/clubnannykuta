@@ -79,9 +79,10 @@ const baseTemplate = (content) => `<!DOCTYPE html>
     }
 
     .email-header {
-      background-color: #1A1A1A;
+      background-color: #F7F8F6;
       padding: 32px 40px;
       text-align: center;
+      border-bottom: 1px solid #E5E2DC;
     }
 
     .logo {
@@ -325,6 +326,25 @@ const formatBookingDate = (date) => {
     year: 'numeric'
   });
 };
+
+const formatEmailTime = (time) => {
+  if (!time) return 'TBD';
+  const value = String(time).trim();
+  if (/\b(am|pm)\b/i.test(value)) return value.toUpperCase();
+
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value;
+
+  const hours = Number(match[1]);
+  const minutes = match[2];
+  if (Number.isNaN(hours)) return value;
+
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes} ${period}`;
+};
+
+const formatEmailTimeRange = (startTime, endTime) => `${formatEmailTime(startTime)} - ${formatEmailTime(endTime)}`;
 
 // ============================================
 // CONTACT FORM TEMPLATES
@@ -1112,6 +1132,13 @@ class EmailService {
           Your Club Nanny sitter application has been approved. You can now open the Club Nanny web app, finish setting up your profile, and start browsing available sitter jobs.
         </p>
 
+        <div class="highlight-box">
+          <h3>What's Next?</h3>
+          <p>Please send 2 references with email addresses to <a href="mailto:${SUPPORT_EMAIL}" style="color: #8BA99E;">${SUPPORT_EMAIL}</a></p>
+          <p>Be looking in your inbox for an email to approve the background check. Please note: if you are under age 16, you WILL need your parent’s permission and approval for this step.</p>
+          <p>Our team will reach out to schedule your video call.</p>
+        </div>
+
         <center>
           <a href="${appUrl}" class="cta-button">Open the Club Nanny Web App</a>
         </center>
@@ -1776,6 +1803,7 @@ class EmailService {
   async sendNewJobAlert(data) {
     const { to, sitterName, date, startTime, endTime, city, state, numberOfChildren, requestId } = data;
     const dateLabel = formatBookingDate(date);
+    const timeRange = formatEmailTimeRange(startTime, endTime);
     const jobUrl = `${APP_URL}/sitting/sitter/jobs/${requestId || ''}`;
 
     const html = baseTemplate(`
@@ -1791,7 +1819,7 @@ class EmailService {
           </div>
           <div class="info-row">
             <span class="info-label">Time</span>
-            <span class="info-value">${startTime} - ${endTime}</span>
+            <span class="info-value">${timeRange}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Children</span>
@@ -1818,13 +1846,14 @@ class EmailService {
   async sendSitterRespondedToFamily(data) {
     const { to, familyName, sitterName, date, startTime, endTime, requestId } = data;
     const dateLabel = formatBookingDate(date);
+    const timeRange = formatEmailTimeRange(startTime, endTime);
     const requestUrl = `${APP_URL}/sitting/family/requests/${requestId || ''}`;
 
     const html = baseTemplate(`
       <div class="email-body">
         <h1 class="greeting">A Sitter Is Interested!</h1>
         <p class="message">Hi ${familyName || 'there'},</p>
-        <p class="message"><strong>${sitterName}</strong> responded to your babysitting request for <strong>${dateLabel}</strong> (${startTime} - ${endTime}). Review their profile and confirm them when you're ready.</p>
+        <p class="message"><strong>${sitterName}</strong> responded to your babysitting request for <strong>${dateLabel}</strong> (${timeRange}). Review their profile and confirm them when you're ready.</p>
 
         <center>
           <a href="${requestUrl}" class="cta-button" style="background-color: #C77DA3;">View Responses</a>
@@ -1841,6 +1870,7 @@ class EmailService {
   async sendBookingConfirmedToSitter(data) {
     const { to, sitterName, familyName, date, startTime, endTime, address, city, state } = data;
     const dateLabel = formatBookingDate(date);
+    const timeRange = formatEmailTimeRange(startTime, endTime);
     const location = [address, [city, state].filter(Boolean).join(', ')].filter(Boolean).join(' — ');
 
     const html = baseTemplate(`
@@ -1856,7 +1886,7 @@ class EmailService {
           </div>
           <div class="info-row">
             <span class="info-label">Time</span>
-            <span class="info-value">${startTime} - ${endTime}</span>
+            <span class="info-value">${timeRange}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Location</span>
@@ -1880,6 +1910,7 @@ class EmailService {
   async sendBookingCancelled(data) {
     const { to, recipientName, by, date, startTime, endTime, reason } = data;
     const dateLabel = formatBookingDate(date);
+    const timeRange = formatEmailTimeRange(startTime, endTime);
     const whoCancelled = by === 'sitter' ? 'The sitter' : 'The family';
     const followUp = by === 'sitter'
       ? 'Your request has been reopened so other sitters in your area can respond.'
@@ -1892,7 +1923,7 @@ class EmailService {
       <div class="email-body">
         <h1 class="greeting">Booking Cancelled</h1>
         <p class="message">Hi ${recipientName || 'there'},</p>
-        <p class="message">${whoCancelled} cancelled the booking scheduled for <strong>${dateLabel}</strong> (${startTime} - ${endTime}). ${followUp}</p>
+        <p class="message">${whoCancelled} cancelled the booking scheduled for <strong>${dateLabel}</strong> (${timeRange}). ${followUp}</p>
         ${reasonHtml}
       </div>
     `);

@@ -17,6 +17,22 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(requireAdmin);
 
+function sitterPayloadWithCurrentEmail(sitter) {
+  const sitterObject = sitter.toObject();
+  const userEmail = sitterObject.userId?.email;
+
+  if (userEmail && userEmail !== sitterObject.email) {
+    const userUpdatedAt = sitterObject.userId?.updatedAt ? new Date(sitterObject.userId.updatedAt) : null;
+    const profileUpdatedAt = sitterObject.updatedAt ? new Date(sitterObject.updatedAt) : null;
+
+    if (!profileUpdatedAt || !userUpdatedAt || userUpdatedAt >= profileUpdatedAt) {
+      sitterObject.email = userEmail;
+    }
+  }
+
+  return sitterObject;
+}
+
 // ============================================
 // SITTER MANAGEMENT
 // ============================================
@@ -85,7 +101,7 @@ router.get('/sitters', async (req, res) => {
 router.get('/sitters/:id', async (req, res) => {
   try {
     const sitter = await SitterProfile.findById(req.params.id)
-      .populate('userId', 'email createdAt lastLogin')
+      .populate('userId', 'email createdAt updatedAt lastLogin')
       .populate('approvedBy', 'email firstName lastName');
 
     if (!sitter) {
@@ -120,7 +136,7 @@ router.get('/sitters/:id', async (req, res) => {
 
     res.json({
       success: true,
-      sitter,
+      sitter: sitterPayloadWithCurrentEmail(sitter),
       bookingStats,
       paymentStats: paymentStats || { paidCount: 0, paidAmountCents: 0 }
     });
@@ -139,7 +155,8 @@ router.get('/sitters/:id', async (req, res) => {
  */
 router.post('/sitters/:id/send-confirmation', async (req, res) => {
   try {
-    const sitter = await SitterProfile.findById(req.params.id);
+    const sitter = await SitterProfile.findById(req.params.id)
+      .populate('userId', 'email updatedAt');
 
     if (!sitter) {
       return res.status(404).json({
@@ -148,32 +165,19 @@ router.post('/sitters/:id/send-confirmation', async (req, res) => {
       });
     }
 
-    let result;
-    let emailType = 'confirmation';
-
-    if (sitter.status === 'active') {
-      result = await emailService.sendSitterApprovalEmail(sitter.toObject());
-      emailType = 'approval';
-    } else if (sitter.status === 'rejected') {
-      result = await emailService.sendSitterRejectionEmail(sitter.toObject(), {
-        membershipRefunded: Boolean(sitter.membershipFeeRefundedAt)
-      });
-      emailType = 'rejection';
-    } else if (['pending_payment', 'pending_approval'].includes(sitter.status)) {
-      result = await emailService.sendSitterApplicationSubmittedToApplicant(sitter.toObject());
-    } else {
+    if (sitter.status === 'rejected') {
       return res.status(400).json({
         success: false,
-        message: `No manual confirmation email is configured for ${sitter.status.replace(/_/g, ' ')} sitters`
+        message: 'Application confirmation email is not sent to rejected sitters'
       });
     }
 
+    const result = await emailService.sendSitterApplicationSubmittedToApplicant(sitterPayloadWithCurrentEmail(sitter));
+
     res.json({
       success: Boolean(result?.success),
-      message: result?.success
-        ? `${emailType.charAt(0).toUpperCase() + emailType.slice(1)} email sent`
-        : `Failed to send ${emailType} email`,
-      emailType,
+      message: result?.success ? 'Application confirmation email sent' : 'Failed to send application confirmation email',
+      emailType: 'confirmation',
       result
     });
   } catch (error) {
@@ -191,7 +195,8 @@ router.post('/sitters/:id/send-confirmation', async (req, res) => {
  */
 router.post('/sitters/:id/send-approval', async (req, res) => {
   try {
-    const sitter = await SitterProfile.findById(req.params.id);
+    const sitter = await SitterProfile.findById(req.params.id)
+      .populate('userId', 'email updatedAt');
 
     if (!sitter) {
       return res.status(404).json({
@@ -207,7 +212,7 @@ router.post('/sitters/:id/send-approval', async (req, res) => {
       });
     }
 
-    const result = await emailService.sendSitterApprovalEmail(sitter.toObject());
+    const result = await emailService.sendSitterApprovalEmail(sitterPayloadWithCurrentEmail(sitter));
 
     res.json({
       success: Boolean(result?.success),
