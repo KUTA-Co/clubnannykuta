@@ -34,6 +34,15 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'Leigh@clubnanny.com')
   .split(',')
   .map(email => email.trim())
   .filter(Boolean);
+const BRAND_COLOR = '#8BA99E';
+const BRAND_MUTED = '#595959';
+const BRAND_PAGE = '#FAF9F6';
+const BRAND_BORDER = '#E5E2DC';
+const LINK_STYLE = `color: ${BRAND_COLOR} !important; -webkit-text-fill-color: ${BRAND_COLOR} !important; text-decoration: none;`;
+const CTA_STYLE = `display: inline-block; background-color: ${BRAND_COLOR}; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; text-decoration: none; padding: 14px 36px; border-radius: 6px; font-weight: 600; font-size: 14px; margin: 24px 0; letter-spacing: 0.5px;`;
+const HIGHLIGHT_BOX_STYLE = `background-color: ${BRAND_PAGE}; border-left: 3px solid ${BRAND_COLOR}; padding: 24px; margin: 24px 0;`;
+const INFO_CARD_STYLE = `background-color: ${BRAND_PAGE}; border-radius: 8px; padding: 24px; margin: 20px 0;`;
+const HELP_TEXT_STYLE = `font-size: 14px; color: ${BRAND_MUTED}; margin-top: 24px; padding-top: 24px; border-top: 1px solid ${BRAND_BORDER};`;
 
 function escapeHtml(value) {
   return String(value || '')
@@ -44,15 +53,37 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function withEmailInlineDefaults(content) {
+  return String(content)
+    .replace(/class="cta-button" style="/g, `class="cta-button" style="${CTA_STYLE} `)
+    .replace(/class="highlight-box" style="/g, `class="highlight-box" style="${HIGHLIGHT_BOX_STYLE} `)
+    .replace(/class="info-card" style="/g, `class="info-card" style="${INFO_CARD_STYLE} `)
+    .replace(/class="help-text" style="/g, `class="help-text" style="${HELP_TEXT_STYLE} `)
+    .replace(/class="cta-button"(?![^>]*style=)/g, `class="cta-button" style="${CTA_STYLE}"`)
+    .replace(/class="highlight-box"(?![^>]*style=)/g, `class="highlight-box" style="${HIGHLIGHT_BOX_STYLE}"`)
+    .replace(/class="info-card"(?![^>]*style=)/g, `class="info-card" style="${INFO_CARD_STYLE}"`)
+    .replace(/class="help-text"(?![^>]*style=)/g, `class="help-text" style="${HELP_TEXT_STYLE}"`);
+}
+
 // Base email template wrapper with Club Nanny branding
-const baseTemplate = (content) => `<!DOCTYPE html>
+const baseTemplate = (content) => {
+  const normalizedContent = withEmailInlineDefaults(content);
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>Club Nanny</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      color-scheme: light;
+      supported-color-schemes: light;
+    }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -90,6 +121,7 @@ const baseTemplate = (content) => `<!DOCTYPE html>
       font-size: 28px;
       font-weight: 600;
       color: #8BA99E !important;
+      -webkit-text-fill-color: #8BA99E !important;
       text-decoration: none;
       letter-spacing: 1px;
       mso-line-height-rule: exactly;
@@ -97,6 +129,24 @@ const baseTemplate = (content) => `<!DOCTYPE html>
 
     .logo span {
       color: #8BA99E !important;
+      -webkit-text-fill-color: #8BA99E !important;
+    }
+
+    a {
+      color: #8BA99E !important;
+      -webkit-text-fill-color: #8BA99E !important;
+    }
+
+    a[x-apple-data-detectors],
+    u + #club-nanny-email a,
+    #MessageViewBody a {
+      color: #8BA99E !important;
+      -webkit-text-fill-color: #8BA99E !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
     }
 
     .email-body {
@@ -184,12 +234,13 @@ const baseTemplate = (content) => `<!DOCTYPE html>
 
     .cta-button {
       display: inline-block;
-      background-color: #1A1A1A;
+      background-color: #8BA99E;
       color: #FFFFFF !important;
+      -webkit-text-fill-color: #FFFFFF !important;
       text-decoration: none;
       padding: 14px 36px;
       border-radius: 6px;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 14px;
       margin: 24px 0;
       letter-spacing: 0.5px;
@@ -293,25 +344,67 @@ const baseTemplate = (content) => `<!DOCTYPE html>
       color: #595959;
       margin-top: 8px;
     }
+
+    @media (prefers-color-scheme: dark) {
+      body,
+      .email-wrapper,
+      .email-container,
+      .email-header,
+      .email-footer,
+      .highlight-box,
+      .info-card,
+      .section {
+        background-color: #FAF9F6 !important;
+        color: #1A1A1A !important;
+      }
+
+      .email-container {
+        background-color: #FFFFFF !important;
+      }
+
+      .logo,
+      .logo span,
+      a {
+        color: #8BA99E !important;
+        -webkit-text-fill-color: #8BA99E !important;
+      }
+    }
+
+    @media only screen and (max-width: 640px) {
+      .email-wrapper {
+        padding: 20px 12px !important;
+      }
+
+      .email-header,
+      .email-body,
+      .email-footer {
+        padding-left: 22px !important;
+        padding-right: 22px !important;
+      }
+
+      .logo {
+        font-size: 25px !important;
+      }
+    }
   </style>
 </head>
-<body>
-  <div class="email-wrapper">
-    <div class="email-container">
-      <div class="email-header">
-        <div class="logo" style="color: #8BA99E !important; text-decoration: none;">
-          <span style="color: #8BA99E !important;">CLUB</span>
-          <span style="color: #8BA99E !important;">NANNY</span>
+<body id="club-nanny-email" style="margin: 0; padding: 0; background-color: #FAF9F6; color: #1A1A1A;">
+  <div class="email-wrapper" style="width: 100%; background-color: #FAF9F6; padding: 40px 20px;">
+    <div class="email-container" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #E5E2DC;">
+      <div class="email-header" style="background-color: #F7F8F6; padding: 32px 40px; text-align: center; border-bottom: 1px solid #E5E2DC;">
+        <div class="logo" style="font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 600; color: #8BA99E !important; -webkit-text-fill-color: #8BA99E !important; text-decoration: none; letter-spacing: 1px; line-height: 1.25;">
+          <span style="color: #8BA99E !important; -webkit-text-fill-color: #8BA99E !important;">CLUB</span>
+          <span style="color: #8BA99E !important; -webkit-text-fill-color: #8BA99E !important;">NANNY</span>
         </div>
       </div>
-      ${content}
-      <div class="email-footer">
+      ${normalizedContent}
+      <div class="email-footer" style="background-color: #FAF9F6; padding: 32px 40px; text-align: center; border-top: 1px solid #E5E2DC;">
         <div class="footer-links">
-          <a href="${APP_URL}">Home</a>
-          <a href="${APP_URL}/about">About</a>
-          <a href="${APP_URL}/contact">Contact</a>
+          <a href="${APP_URL}" style="${LINK_STYLE}">Home</a>
+          <a href="${APP_URL}/about" style="${LINK_STYLE}; margin-left: 14px; margin-right: 14px;">About</a>
+          <a href="${APP_URL}/contact" style="${LINK_STYLE}">Contact</a>
         </div>
-        <p class="copyright">
+        <p class="copyright" style="font-size: 12px; color: #595959; margin-top: 16px;">
           © ${new Date().getFullYear()} Club Nanny. All rights reserved.
         </p>
       </div>
@@ -319,6 +412,7 @@ const baseTemplate = (content) => `<!DOCTYPE html>
   </div>
 </body>
 </html>`;
+};
 
 // Format a booking date (Date or string) into a friendly label
 const formatBookingDate = (date) => {
@@ -1839,7 +1933,7 @@ class EmailService {
         </div>
 
         <center>
-          <a href="${jobUrl}" class="cta-button" style="background-color: #C77DA3;">View Job</a>
+          <a href="${jobUrl}" class="cta-button" style="background-color: #8BA99E;">View Job</a>
         </center>
       </div>
     `);
@@ -1863,7 +1957,7 @@ class EmailService {
         <p class="message"><strong>${sitterName}</strong> responded to your babysitting request for <strong>${dateLabel}</strong> (${timeRange}). Review their profile and confirm them when you're ready.</p>
 
         <center>
-          <a href="${requestUrl}" class="cta-button" style="background-color: #C77DA3;">View Responses</a>
+          <a href="${requestUrl}" class="cta-button" style="background-color: #8BA99E;">View Responses</a>
         </center>
       </div>
     `);
@@ -1902,7 +1996,7 @@ class EmailService {
         </div>
 
         <center>
-          <a href="${APP_URL}/sitting/sitter/bookings" class="cta-button" style="background-color: #C77DA3;">View Booking</a>
+          <a href="${APP_URL}/sitting/sitter/bookings" class="cta-button" style="background-color: #8BA99E;">View Booking</a>
         </center>
       </div>
     `);
