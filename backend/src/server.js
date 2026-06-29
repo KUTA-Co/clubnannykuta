@@ -14,6 +14,7 @@ import pushRoutes from './routes/pushRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import legacyImportRoutes from './routes/legacyImportRoutes.js';
 import cronRoutes from './routes/cronRoutes.js';
+import tempTestEmailRoutes from './routes/tempTestEmailRoutes.js';
 
 // Club Nanny sitter-side routes
 import sitterRoutes from './routes/sitterRoutes.js';
@@ -201,6 +202,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Scheduled maintenance/notification routes
 app.use('/api/cron', cronRoutes);
+
+// Temporary production email smoke test route. Remove immediately after use.
+app.use('/api/temp-test-email', tempTestEmailRoutes);
 
 // Club Nanny sitter-side routes
 app.use('/api/sitting/auth', sittingAuthRoutes);
