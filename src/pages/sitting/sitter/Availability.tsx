@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Plus, Trash2, Calendar, Clock, X } from "lucide-react";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -368,7 +369,7 @@ export default function SitterAvailability() {
                 <div>
                   <p className="font-medium text-[#4A4A4A]">{formatDate(slot.date)}</p>
                   <p className="text-xs text-[#4A4A4A]/60">
-                    {slot.isAllDay ? 'All day' : `${slot.startTime} - ${slot.endTime}`}
+                    {slot.isAllDay ? 'All day' : formatDisplayTimeRange(slot.startTime, slot.endTime)}
                     {slot.reason && ` • ${slot.reason}`}
                   </p>
                 </div>

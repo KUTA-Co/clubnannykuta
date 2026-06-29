@@ -10,6 +10,7 @@ import { MapPin, Clock, User, Phone, Mail, Check, Star, Loader2, List, CalendarD
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
 import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
 import { formatDateOnly, isSameDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -571,7 +572,7 @@ export default function FamilyBookings() {
                             <Clock className="w-4 h-4 mt-0.5" style={{ color: '#C77DA3' }} />
                             <div>
                               <p className="font-medium text-[#4A4A4A]">Time</p>
-                              <p className="text-sm text-[#4A4A4A]/60">{booking.startTime} - {booking.endTime}</p>
+                              <p className="text-sm text-[#4A4A4A]/60">{formatDisplayTimeRange(booking.startTime, booking.endTime)}</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-2">

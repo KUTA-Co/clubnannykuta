@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 interface Booking {
   id: string;
@@ -244,7 +245,7 @@ export function ScheduleCalendar({ bookings, isNanny = false }: ScheduleCalendar
                               <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-[#4A4A4A]/50" />
                                 <span>
-                                  {booking.startTime} - {booking.endTime}
+                                  {formatDisplayTimeRange(booking.startTime, booking.endTime)}
                                 </span>
                                 <span className="text-[#4A4A4A]/50">•</span>
                                 <span>{booking.duration}</span>

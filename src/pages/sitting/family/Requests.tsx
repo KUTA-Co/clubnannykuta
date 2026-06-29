@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Clock, MapPin, Users, ArrowRight } from "lucide-react";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -191,7 +192,7 @@ export default function FamilyRequests() {
                         <div className="flex flex-wrap gap-4 text-sm text-[#4A4A4A]/70">
                           <div className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
-                            {request.startTime} - {request.endTime}
+                            {formatDisplayTimeRange(request.startTime, request.endTime)}
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Clock, MapPin, User } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { parseDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 export interface CalendarBooking {
   _id: string;
@@ -120,7 +121,7 @@ export function BookingCalendar({ bookings, viewerRole }: BookingCalendarProps) 
                   </div>
                   <div className="flex items-center gap-2 text-sm text-[#4A4A4A]/70 mb-1">
                     <Clock className="w-4 h-4" style={{ color: "#E8A0BF" }} />
-                    {b.startTime} - {b.endTime}
+                    {formatDisplayTimeRange(b.startTime, b.endTime)}
                   </div>
                   {(b.city || b.state) && (
                     <div className="flex items-center gap-2 text-sm text-[#4A4A4A]/70">

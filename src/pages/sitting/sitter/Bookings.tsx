@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, Users, Phone, Mail, Check, X, Loader2, List, CalendarDays, DollarSign, Star } from "lucide-react";
 import { BookingCalendar } from "@/components/sitting/BookingCalendar";
 import { formatDateOnly, isSameDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -320,7 +321,7 @@ export default function SitterBookings() {
                             <Clock className="w-4 h-4 mt-0.5" style={{ color: '#E8A0BF' }} />
                             <div>
                               <p className="font-medium text-[#4A4A4A]">{formatDate(booking.date)}</p>
-                              <p className="text-sm text-[#4A4A4A]/60">{booking.startTime} - {booking.endTime}</p>
+                              <p className="text-sm text-[#4A4A4A]/60">{formatDisplayTimeRange(booking.startTime, booking.endTime)}</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-2">

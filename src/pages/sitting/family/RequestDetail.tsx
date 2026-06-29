@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Clock, MapPin, Users, User, Check, Loader2, Trash2, Star, Phone, Mail, X, Edit3, Save } from "lucide-react";
 import { formatHourlyRate, getApplicableHourlyRate, rateContextLabel } from "@/lib/sitterRates";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const TIME_VALUE_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -662,7 +663,7 @@ export default function RequestDetail() {
             {formatDate(request.date)}
           </h1>
           <p className="text-[#4A4A4A]/60">
-            {request.startTime} - {request.endTime}
+            {formatDisplayTimeRange(request.startTime, request.endTime)}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

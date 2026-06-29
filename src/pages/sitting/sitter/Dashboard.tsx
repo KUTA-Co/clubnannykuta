@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Briefcase, Clock, Calendar, ChevronRight, Star, MapPin } from "lucide-react";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -145,7 +146,7 @@ export default function SitterDashboard() {
                   <div>
                     <h3 className="font-semibold text-[#4A4A4A]">{job.familyId?.householdName || 'Family'}</h3>
                     <p className="text-sm text-[#4A4A4A]/60 mt-1">
-                      {formatShort(job.date)} • {job.startTime} - {job.endTime}
+                      {formatShort(job.date)} • {formatDisplayTimeRange(job.startTime, job.endTime)}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-xs px-2 py-1 rounded-full bg-[#F5D5E5] text-[#C77DA3]">
@@ -204,7 +205,7 @@ export default function SitterDashboard() {
                   <div>
                     <h3 className="font-semibold text-[#4A4A4A]">{booking.familyId?.householdName || 'Family'}</h3>
                     <p className="text-sm text-[#4A4A4A]/60 mt-1">
-                      {formatShort(booking.date)} • {booking.startTime} - {booking.endTime}
+                      {formatShort(booking.date)} • {formatDisplayTimeRange(booking.startTime, booking.endTime)}
                     </p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">

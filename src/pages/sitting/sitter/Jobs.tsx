@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Clock, Users, AlertCircle, Check, X, Loader2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -227,7 +228,7 @@ export default function SitterJobs() {
                         <Clock className="w-4 h-4" style={{ color: '#E8A0BF' }} />
                         <div>
                           <p className="font-medium text-[#4A4A4A]">{formatDate(job.date)}</p>
-                          <p>{job.startTime} - {job.endTime}</p>
+                          <p>{formatDisplayTimeRange(job.startTime, job.endTime)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-[#4A4A4A]/70">

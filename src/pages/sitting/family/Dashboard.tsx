@@ -5,6 +5,7 @@ import { PlusCircle, Clock, Calendar, ArrowRight, Users, Star } from "lucide-rea
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -229,7 +230,7 @@ export default function FamilyDashboard() {
                             {formatDate(request.date)}
                           </p>
                           <p className="text-sm text-[#4A4A4A]/60">
-                            {request.startTime} - {request.endTime} | {request.numberOfChildren} {request.numberOfChildren === 1 ? 'child' : 'children'}
+                            {formatDisplayTimeRange(request.startTime, request.endTime)} | {request.numberOfChildren} {request.numberOfChildren === 1 ? 'child' : 'children'}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -285,7 +286,7 @@ export default function FamilyDashboard() {
                         {formatDate(booking.date)}
                       </p>
                       <p className="text-sm text-[#4A4A4A]/60">
-                        {booking.startTime} - {booking.endTime}
+                        {formatDisplayTimeRange(booking.startTime, booking.endTime)}
                       </p>
                       <p className="text-sm" style={{ color: '#C77DA3' }}>
                         Sitter: {booking.confirmedSitterId?.firstName} {booking.confirmedSitterId?.lastName}

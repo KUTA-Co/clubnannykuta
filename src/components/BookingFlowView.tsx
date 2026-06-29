@@ -12,6 +12,7 @@ import { CheckCircle2, ArrowLeft, Calendar, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 export function BookingFlowView() {
   const { id } = useParams();
@@ -93,7 +94,7 @@ export function BookingFlowView() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#4A4A4A]/60">Time:</span>
-                  <span className="font-medium text-[#4A4A4A]">{bookingDetails.startTime} - {bookingDetails.endTime}</span>
+                  <span className="font-medium text-[#4A4A4A]">{formatDisplayTimeRange(bookingDetails.startTime, bookingDetails.endTime)}</span>
                 </div>
                 <div className="flex justify-between border-t border-[#E8E5DF] pt-3">
                   <span className="text-[#4A4A4A]/60">Total Paid:</span>
@@ -350,7 +351,9 @@ export function BookingFlowView() {
                       <div className="flex justify-between">
                         <span className="text-[#4A4A4A]/60">Time:</span>
                         <span className="font-medium text-[#4A4A4A]">
-                          {bookingDetails.startTime || "Not selected"} - {bookingDetails.endTime || "Not selected"}
+                          {bookingDetails.startTime && bookingDetails.endTime
+                            ? formatDisplayTimeRange(bookingDetails.startTime, bookingDetails.endTime)
+                            : `${bookingDetails.startTime || "Not selected"} - ${bookingDetails.endTime || "Not selected"}`}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -502,7 +505,7 @@ export function BookingFlowView() {
                 {bookingDetails.startTime && bookingDetails.endTime && (
                   <div className="flex items-center gap-2 text-sm font-body text-[#4A4A4A]">
                     <Clock className="h-4 w-4 text-[#4A4A4A]/60" />
-                    <span>{bookingDetails.startTime} - {bookingDetails.endTime}</span>
+                    <span>{formatDisplayTimeRange(bookingDetails.startTime, bookingDetails.endTime)}</span>
                   </div>
                 )}
               </div>

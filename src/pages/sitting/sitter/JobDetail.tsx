@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Clock, Users, AlertCircle, Check, X, Loader2 } from "lucide-react";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { formatDisplayTimeRange } from "@/lib/timeFormat";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -167,7 +168,7 @@ export default function JobDetail() {
               <Clock className="w-5 h-5 mt-0.5" style={{ color: '#E8A0BF' }} />
               <div>
                 <p className="font-medium text-[#4A4A4A]">{formatDate(job.date)}</p>
-                <p className="text-sm text-[#4A4A4A]/60">{job.startTime} - {job.endTime}</p>
+                <p className="text-sm text-[#4A4A4A]/60">{formatDisplayTimeRange(job.startTime, job.endTime)}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">

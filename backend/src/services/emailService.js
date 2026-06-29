@@ -92,6 +92,7 @@ const baseTemplate = (content) => `<!DOCTYPE html>
       color: #8BA99E !important;
       text-decoration: none;
       letter-spacing: 1px;
+      mso-line-height-rule: exactly;
     }
 
     .logo span {
@@ -298,7 +299,10 @@ const baseTemplate = (content) => `<!DOCTYPE html>
   <div class="email-wrapper">
     <div class="email-container">
       <div class="email-header">
-        <a href="${APP_URL}" class="logo" style="color: #8BA99E !important; text-decoration: none;">CLUB <span style="color: #8BA99E !important;">NANNY</span></a>
+        <div class="logo" style="color: #8BA99E !important; text-decoration: none;">
+          <span style="color: #8BA99E !important;">CLUB</span>
+          <span style="color: #8BA99E !important;">NANNY</span>
+        </div>
       </div>
       ${content}
       <div class="email-footer">
@@ -330,7 +334,14 @@ const formatBookingDate = (date) => {
 const formatEmailTime = (time) => {
   if (!time) return 'TBD';
   const value = String(time).trim();
-  if (/\b(am|pm)\b/i.test(value)) return value.toUpperCase();
+  const existingPeriodMatch = value.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (existingPeriodMatch) {
+    const hour = Number(existingPeriodMatch[1]);
+    const minute = existingPeriodMatch[2];
+    const period = existingPeriodMatch[3].toUpperCase();
+    if (!minute || minute === '00') return `${hour} ${period}`;
+    return `${hour}:${minute} ${period}`;
+  }
 
   const match = value.match(/^(\d{1,2}):(\d{2})/);
   if (!match) return value;
@@ -341,7 +352,7 @@ const formatEmailTime = (time) => {
 
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes} ${period}`;
+  return minutes === '00' ? `${displayHours} ${period}` : `${displayHours}:${minutes} ${period}`;
 };
 
 const formatEmailTimeRange = (startTime, endTime) => `${formatEmailTime(startTime)} - ${formatEmailTime(endTime)}`;
@@ -1107,6 +1118,9 @@ class EmailService {
         <div class="highlight-box">
           <h3>What's Next?</h3>
           <p>Our team will review your application and notify you by email once your account has been approved.</p>
+          <p>Please send 2 references with email addresses to <a href="mailto:${SUPPORT_EMAIL}" style="color: #8BA99E !important; text-decoration: none;">${SUPPORT_EMAIL}</a>.</p>
+          <p>Be looking in your inbox for an email to approve the background check. Please note: if you are under age 16, you WILL need your parent's permission and approval for this step.</p>
+          <p>Our team will reach out to schedule your video call.</p>
         </div>
       </div>
     `);
@@ -1132,15 +1146,8 @@ class EmailService {
           Your Club Nanny sitter application has been approved. You can now open the Club Nanny web app, finish setting up your profile, and start browsing available sitter jobs.
         </p>
 
-        <div class="highlight-box">
-          <h3>What's Next?</h3>
-          <p>Please send 2 references with email addresses to <a href="mailto:${SUPPORT_EMAIL}" style="color: #8BA99E;">${SUPPORT_EMAIL}</a></p>
-          <p>Be looking in your inbox for an email to approve the background check. Please note: if you are under age 16, you WILL need your parent’s permission and approval for this step.</p>
-          <p>Our team will reach out to schedule your video call.</p>
-        </div>
-
         <center>
-          <a href="${appUrl}" class="cta-button">Open the Club Nanny Web App</a>
+          <a href="${appUrl}" class="cta-button" style="background-color: #F7F8F6; border: 1px solid #8BA99E; color: #8BA99E !important; text-decoration: none;">Open the Club Nanny Web App</a>
         </center>
 
         <div class="highlight-box">
