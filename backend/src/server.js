@@ -14,7 +14,6 @@ import pushRoutes from './routes/pushRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import legacyImportRoutes from './routes/legacyImportRoutes.js';
 import cronRoutes from './routes/cronRoutes.js';
-import tempCleanupRoutes from './routes/tempCleanupRoutes.js';
 
 // Club Nanny sitter-side routes
 import sitterRoutes from './routes/sitterRoutes.js';
@@ -202,9 +201,6 @@ app.use('/api/notifications', notificationRoutes);
 
 // Scheduled maintenance/notification routes
 app.use('/api/cron', cronRoutes);
-
-// Temporary staging cleanup route. Remove immediately after use.
-app.use('/api/temp-cleanup', tempCleanupRoutes);
 
 // Club Nanny sitter-side routes
 app.use('/api/sitting/auth', sittingAuthRoutes);
