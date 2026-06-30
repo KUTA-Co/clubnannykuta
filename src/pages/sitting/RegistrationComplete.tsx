@@ -70,6 +70,7 @@ export default function RegistrationComplete() {
       if (result.success) {
         // Clear stored data
         clearRegistrationData(storageKey);
+        clearRegistrationData(type === 'sitter' ? 'sitterRegistrationCheckout' : 'familyRegistrationCheckout');
 
         // Log the user in
         if (result.token) {

@@ -1,6 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { User, SitterProfile, SittingFamilyProfile } from '../models/index.js';
+import { User, SitterProfile, SittingFamilyProfile, Payment } from '../models/index.js';
 import stripeService from '../services/stripeService.js';
 import emailService from '../services/emailService.js';
 
@@ -28,6 +28,37 @@ function calculateValidSitterAge({ age, dateOfBirth }) {
   }
 
   return computedAge;
+}
+
+async function upsertSittingPayment({ session, profile, type, amount, applicantName }) {
+  const applicationType = type === 'sitter' ? 'sitter' : 'sitting_family';
+  const applicationModel = type === 'sitter' ? 'SitterProfile' : 'SittingFamilyProfile';
+  const paymentType = type === 'sitter' ? 'sitter_registration' : 'sitting_family_membership';
+
+  await Payment.findOneAndUpdate(
+    { stripeSessionId: session.id },
+    {
+      $set: {
+        stripePaymentIntentId: session.payment_intent,
+        stripeCustomerId: session.customer,
+        paymentType,
+        applicationType,
+        applicationId: profile._id,
+        applicationModel,
+        applicantEmail: profile.email,
+        applicantName,
+        amount,
+        currency: (session.currency || 'usd').toUpperCase(),
+        status: 'completed',
+        completedAt: new Date(),
+        metadata: {
+          registrationType: type,
+          stripeAmountTotal: session.amount_total
+        }
+      }
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
 }
 
 // ============================================
@@ -70,14 +101,6 @@ router.post('/register/sitter', async (req, res) => {
           message: 'A sitter account with this email already exists'
         });
       }
-
-      // Users are only created after Stripe redirects back with a paid session.
-      // If a user exists but the profile does not, the paid completion step failed.
-      // Do not create another checkout and charge the applicant again.
-      return res.status(409).json({
-        success: false,
-        message: 'A paid sitter registration is already in progress for this email. Please use the payment success page to finalize it, or contact Club Nanny so we can complete it without another payment.'
-      });
     }
 
     const name = `${firstName} ${lastName}`;
@@ -137,6 +160,13 @@ router.post('/complete/sitter', async (req, res) => {
       preferredRadius
     } = req.body;
 
+    if (!sessionId || !email || !password || !firstName || !lastName || !city || !state) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing registration details. Please go back to the application; your saved details should still be there.'
+      });
+    }
+
     // Verify payment
     const session = await stripeService.getSession(sessionId);
 
@@ -144,6 +174,13 @@ router.post('/complete/sitter', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Payment not completed'
+      });
+    }
+
+    if (session.metadata?.registrationType && session.metadata.registrationType !== 'sitter') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment session does not match sitter registration'
       });
     }
 
@@ -178,9 +215,21 @@ router.post('/complete/sitter', async (req, res) => {
         phone
       });
     } else {
-      // Update existing user to add sitter role
-      if (user.role === 'family') {
+      // Re-registration can leave a user account behind after an admin removes
+      // the profile. Reuse that account and refresh the login/profile fields.
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.phone = phone || user.phone;
+      if (password) {
+        user.password = password;
+      }
+      if (user.role !== 'admin') {
+        user.role = 'sitter';
+      }
+      if (user.serviceType === 'nanny') {
         user.serviceType = 'both';
+      } else {
+        user.serviceType = 'sitting';
       }
       await user.save();
     }
@@ -189,6 +238,14 @@ router.post('/complete/sitter', async (req, res) => {
     // re-submitted after a page refresh), return it instead of creating a duplicate.
     const existingProfile = await SitterProfile.findOne({ userId: user._id });
     if (existingProfile) {
+      await upsertSittingPayment({
+        session,
+        profile: existingProfile,
+        type: 'sitter',
+        amount: applicationFeeAmountCents + membershipFeeAmountCents,
+        applicantName: `${existingProfile.firstName} ${existingProfile.lastName}`.trim()
+      });
+
       const existingToken = jwt.sign(
         { id: user._id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
@@ -245,6 +302,14 @@ router.post('/complete/sitter', async (req, res) => {
       applicationFeeAmountCents,
       membershipFeeAmountCents,
       membershipFeeChargedAt
+    });
+
+    await upsertSittingPayment({
+      session,
+      profile,
+      type: 'sitter',
+      amount: applicationFeeAmountCents + membershipFeeAmountCents,
+      applicantName: `${firstName} ${lastName}`.trim()
     });
 
     try {
@@ -319,14 +384,6 @@ router.post('/register/family', async (req, res) => {
           message: 'A Club Nanny family account with this email already exists'
         });
       }
-
-      // Users are only created after Stripe redirects back with a paid session.
-      // If a user exists but the profile does not, the paid completion step failed.
-      // Do not create another checkout and charge the family again.
-      return res.status(409).json({
-        success: false,
-        message: 'A paid family registration is already in progress for this email. Please use the payment success page to finalize it, or contact Club Nanny so we can complete it without another payment.'
-      });
     }
 
     // Create Stripe checkout session
@@ -376,6 +433,13 @@ router.post('/complete/family', async (req, res) => {
       emergencyContact
     } = req.body;
 
+    if (!sessionId || !email || !password || !householdName || !city || !state) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing registration details. Please go back to the application; your saved details should still be there.'
+      });
+    }
+
     // Verify payment
     const session = await stripeService.getSession(sessionId);
 
@@ -383,6 +447,13 @@ router.post('/complete/family', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Payment not completed'
+      });
+    }
+
+    if (session.metadata?.registrationType && session.metadata.registrationType !== 'sitting_family') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment session does not match family registration'
       });
     }
 
@@ -396,7 +467,6 @@ router.post('/complete/family', async (req, res) => {
 
     // Check if user already exists
     let user = await User.findOne({ email: email.toLowerCase() });
-    let isNewUser = false;
 
     if (!user) {
       // Create new user
@@ -408,20 +478,33 @@ router.post('/complete/family', async (req, res) => {
         firstName: householdName,
         phone: phone || ''
       });
-      isNewUser = true;
     } else {
-      // Update existing user
+      // Reuse accounts left behind after an admin removes a sitting-family profile.
       if (user.serviceType === 'nanny') {
         user.serviceType = 'both';
+      } else {
+        user.serviceType = 'sitting';
       }
-      if (!user.firstName) user.firstName = householdName;
-      if (phone && !user.phone) user.phone = phone;
+      if (user.role !== 'admin') {
+        user.role = 'family';
+      }
+      user.firstName = householdName;
+      if (phone) user.phone = phone;
+      if (password) user.password = password;
       await user.save();
     }
 
     // Idempotency: if this user already has a sitting family profile, return it
     const existingFamilyProfile = await SittingFamilyProfile.findOne({ userId: user._id });
     if (existingFamilyProfile) {
+      await upsertSittingPayment({
+        session,
+        profile: existingFamilyProfile,
+        type: 'sitting_family',
+        amount: Number(session.amount_total || stripeService.getSittingFee('family_membership')),
+        applicantName: existingFamilyProfile.householdName
+      });
+
       const existingToken = jwt.sign(
         { id: user._id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
@@ -459,6 +542,14 @@ router.post('/complete/family', async (req, res) => {
       membershipExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       stripeSessionId: sessionId,
       stripeCustomerId: session.customer
+    });
+
+    await upsertSittingPayment({
+      session,
+      profile,
+      type: 'sitting_family',
+      amount: Number(session.amount_total || stripeService.getSittingFee('family_membership')),
+      applicantName: householdName
     });
 
     try {

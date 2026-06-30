@@ -15,14 +15,14 @@ const paymentSchema = new mongoose.Schema({
   // Payment Type
   paymentType: {
     type: String,
-    enum: ['application', 'placement_standard', 'placement_local', 'placement_livein'],
+    enum: ['application', 'sitter_registration', 'sitting_family_membership', 'placement_standard', 'placement_local', 'placement_livein'],
     default: 'application'
   },
 
   // Application Reference
   applicationType: {
     type: String,
-    enum: ['family', 'nanny'],
+    enum: ['family', 'nanny', 'sitter', 'sitting_family'],
     required: true
   },
   applicationId: {
@@ -32,7 +32,7 @@ const paymentSchema = new mongoose.Schema({
   },
   applicationModel: {
     type: String,
-    enum: ['FamilyApplication', 'NannyApplication'],
+    enum: ['FamilyApplication', 'NannyApplication', 'SitterProfile', 'SittingFamilyProfile'],
     required: true
   },
 
@@ -63,7 +63,7 @@ const paymentSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
+    enum: ['pending', 'completed', 'failed', 'refunded', 'expired'],
     default: 'pending'
   },
 

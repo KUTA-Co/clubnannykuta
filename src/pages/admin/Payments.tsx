@@ -38,6 +38,7 @@ interface Payment {
   status: string;
   completedAt?: string;
   createdAt: string;
+  isDerived?: boolean;
 }
 
 interface Pagination {
@@ -142,7 +143,18 @@ export default function Payments() {
   };
 
   const getPaymentTypeLabel = (payment: Payment) => {
-    return payment.applicationType === 'family' ? 'Family Registration' : 'Nanny Registration';
+    switch (payment.applicationType) {
+      case 'family':
+        return 'Nanny Family Application';
+      case 'nanny':
+        return 'Nanny Application';
+      case 'sitter':
+        return 'Sitter Application + Membership';
+      case 'sitting_family':
+        return 'Sitter Family Membership';
+      default:
+        return 'Payment';
+    }
   };
 
   const getPaymentTypeIcon = () => {
@@ -150,9 +162,33 @@ export default function Payments() {
   };
 
   const getPaymentTypeBadgeStyle = (payment: Payment) => {
-    return payment.applicationType === 'family'
-      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-      : 'bg-purple-50 text-purple-700 border border-purple-200';
+    switch (payment.applicationType) {
+      case 'family':
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
+      case 'nanny':
+        return 'bg-purple-50 text-purple-700 border border-purple-200';
+      case 'sitter':
+        return 'bg-pink-50 text-pink-700 border border-pink-200';
+      case 'sitting_family':
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
+    }
+  };
+
+  const getPaymentApplicationPath = (payment: Payment) => {
+    switch (payment.applicationType) {
+      case 'family':
+        return `/admin/families/${payment.applicationId}`;
+      case 'nanny':
+        return `/admin/nannies/${payment.applicationId}`;
+      case 'sitter':
+        return `/admin/sitters/${payment.applicationId}`;
+      case 'sitting_family':
+        return `/admin/sitting-families`;
+      default:
+        return null;
+    }
   };
 
   const verifyPayment = async (payment: Payment) => {
@@ -512,24 +548,26 @@ export default function Payments() {
                         <div className="flex items-center justify-end gap-1">
                           <TooltipProvider delayDuration={100}>
                             {/* View Application */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`/admin/${payment.applicationType === 'family' ? 'families' : 'nannies'}/${payment.applicationId}`)}
-                                  className="text-gray-500 hover:text-[#8BA99E] hover:bg-[#8BA99E]/10"
-                                >
-                                  <ExternalLink className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-0">
-                                <p>View application</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            {getPaymentApplicationPath(payment) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate(getPaymentApplicationPath(payment)!)}
+                                    className="text-gray-500 hover:text-[#8BA99E] hover:bg-[#8BA99E]/10"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-[#1A1A1A] text-white border-0">
+                                  <p>View application</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
 
                             {/* Pending payment actions */}
-                            {payment.status === 'pending' && (
+                            {payment.status === 'pending' && !payment.isDerived && (
                               <>
                                 {/* Verify with Stripe */}
                                 <Tooltip>

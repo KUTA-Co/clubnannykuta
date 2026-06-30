@@ -9,6 +9,8 @@ import {
   NannyApplication,
   Payment,
   ContactSubmission,
+  SitterProfile,
+  SittingFamilyProfile,
   Match
 } from '../models/index.js';
 
@@ -17,6 +19,221 @@ const router = express.Router();
 // All admin routes require authentication and admin role
 router.use(authenticateToken);
 router.use(requireAdmin);
+
+function paymentStatusFromApplication(paymentStatus) {
+  if (paymentStatus === 'paid') return 'completed';
+  if (paymentStatus === 'refunded') return 'refunded';
+  if (paymentStatus === 'pending') return 'pending';
+  return null;
+}
+
+function normalizePaymentDoc(payment) {
+  const normalized = typeof payment.toObject === 'function' ? payment.toObject() : payment;
+  return {
+    ...normalized,
+    _id: String(payment._id),
+    applicationId: payment.applicationId ? String(payment.applicationId) : payment.applicationId,
+    isDerived: false
+  };
+}
+
+function makeDerivedPayment({
+  id,
+  stripeSessionId,
+  stripePaymentIntentId,
+  stripeCustomerId,
+  paymentType = 'application',
+  applicationType,
+  applicationId,
+  applicationModel,
+  applicantEmail,
+  applicantName,
+  amount,
+  status,
+  createdAt,
+  completedAt,
+  metadata
+}) {
+  return {
+    _id: id,
+    stripeSessionId,
+    stripePaymentIntentId,
+    stripeCustomerId,
+    paymentType,
+    applicationType,
+    applicationId,
+    applicationModel,
+    applicantEmail,
+    applicantName,
+    amount,
+    currency: 'USD',
+    status,
+    createdAt,
+    completedAt,
+    metadata,
+    isDerived: true
+  };
+}
+
+function getPaymentSortValue(payment, field) {
+  const value = payment[field];
+  if (field.toLowerCase().includes('date') || field === 'createdAt' || field === 'completedAt') {
+    return value ? new Date(value).getTime() : 0;
+  }
+  if (typeof value === 'string') return value.toLowerCase();
+  return value ?? '';
+}
+
+async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt', sortOrder = 'desc' }) {
+  const query = {};
+  if (status) query.status = status;
+  if (applicationType) query.applicationType = applicationType;
+
+  const paymentDocs = (await Payment.find(query).lean()).map(normalizePaymentDoc);
+  const seenSessions = new Set(paymentDocs.map((payment) => payment.stripeSessionId).filter(Boolean));
+  const seenApplicationKeys = new Set(
+    paymentDocs.map((payment) => `${payment.applicationType}:${payment.applicationId}`).filter(Boolean)
+  );
+  const derivedPayments = [];
+
+  const includeType = (type) => !applicationType || applicationType === type;
+  const includeStatus = (paymentStatus) => !status || paymentStatus === status;
+  const hasPaymentSession = { $exists: true, $nin: [null, ''] };
+
+  if (includeType('family')) {
+    const familyApplications = await FamilyApplication.find({
+      stripeSessionId: hasPaymentSession,
+      paymentStatus: { $in: ['paid', 'pending', 'refunded'] }
+    }).lean();
+
+    for (const application of familyApplications) {
+      const derivedStatus = paymentStatusFromApplication(application.paymentStatus);
+      const applicationKey = `family:${application._id}`;
+      if (!derivedStatus || !includeStatus(derivedStatus)) continue;
+      if (seenSessions.has(application.stripeSessionId) || seenApplicationKeys.has(applicationKey)) continue;
+
+      derivedPayments.push(makeDerivedPayment({
+        id: `derived-family-${application._id}`,
+        stripeSessionId: application.stripeSessionId,
+        stripePaymentIntentId: application.stripePaymentIntentId,
+        applicationType: 'family',
+        applicationId: String(application._id),
+        applicationModel: 'FamilyApplication',
+        applicantEmail: application.email,
+        applicantName: application.parentName,
+        amount: stripeService.getApplicationFee('family'),
+        status: derivedStatus,
+        createdAt: application.createdAt,
+        completedAt: derivedStatus === 'completed' ? application.updatedAt : undefined
+      }));
+    }
+  }
+
+  if (includeType('nanny')) {
+    const nannyApplications = await NannyApplication.find({
+      stripeSessionId: hasPaymentSession,
+      paymentStatus: { $in: ['paid', 'pending', 'refunded'] }
+    }).lean();
+
+    for (const application of nannyApplications) {
+      const derivedStatus = paymentStatusFromApplication(application.paymentStatus);
+      const applicationKey = `nanny:${application._id}`;
+      if (!derivedStatus || !includeStatus(derivedStatus)) continue;
+      if (seenSessions.has(application.stripeSessionId) || seenApplicationKeys.has(applicationKey)) continue;
+
+      derivedPayments.push(makeDerivedPayment({
+        id: `derived-nanny-${application._id}`,
+        stripeSessionId: application.stripeSessionId,
+        stripePaymentIntentId: application.stripePaymentIntentId,
+        applicationType: 'nanny',
+        applicationId: String(application._id),
+        applicationModel: 'NannyApplication',
+        applicantEmail: application.email,
+        applicantName: application.fullName,
+        amount: stripeService.getApplicationFee('nanny'),
+        status: derivedStatus,
+        createdAt: application.createdAt,
+        completedAt: derivedStatus === 'completed' ? application.updatedAt : undefined
+      }));
+    }
+  }
+
+  if (includeType('sitter')) {
+    const sitters = await SitterProfile.find({
+      $or: [
+        { stripeSessionId: hasPaymentSession },
+        { applicationFeePaid: true }
+      ]
+    }).lean();
+
+    for (const sitter of sitters) {
+      const applicationKey = `sitter:${sitter._id}`;
+      const derivedStatus = sitter.membershipFeeRefundedAt ? 'refunded' : 'completed';
+      if (!includeStatus(derivedStatus)) continue;
+      if ((sitter.stripeSessionId && seenSessions.has(sitter.stripeSessionId)) || seenApplicationKeys.has(applicationKey)) continue;
+
+      derivedPayments.push(makeDerivedPayment({
+        id: `derived-sitter-${sitter._id}`,
+        stripeSessionId: sitter.stripeSessionId || `sitter-${sitter._id}`,
+        stripePaymentIntentId: sitter.stripePaymentIntentId,
+        stripeCustomerId: sitter.stripeCustomerId,
+        paymentType: 'sitter_registration',
+        applicationType: 'sitter',
+        applicationId: String(sitter._id),
+        applicationModel: 'SitterProfile',
+        applicantEmail: sitter.email,
+        applicantName: `${sitter.firstName || ''} ${sitter.lastName || ''}`.trim(),
+        amount: Number(sitter.applicationFeeAmountCents || stripeService.getSittingFee('sitter_application'))
+          + Number(sitter.membershipFeeAmountCents || 0),
+        status: derivedStatus,
+        createdAt: sitter.createdAt,
+        completedAt: sitter.applicationFeePaidAt || sitter.membershipFeeChargedAt || sitter.updatedAt,
+        metadata: {
+          membershipFeeRefundedAt: sitter.membershipFeeRefundedAt,
+          membershipFeeRefundId: sitter.membershipFeeRefundId
+        }
+      }));
+    }
+  }
+
+  if (includeType('sitting_family')) {
+    const sittingFamilies = await SittingFamilyProfile.find({
+      stripeSessionId: hasPaymentSession
+    }).lean();
+
+    for (const family of sittingFamilies) {
+      const applicationKey = `sitting_family:${family._id}`;
+      const derivedStatus = 'completed';
+      if (!includeStatus(derivedStatus)) continue;
+      if (seenSessions.has(family.stripeSessionId) || seenApplicationKeys.has(applicationKey)) continue;
+
+      derivedPayments.push(makeDerivedPayment({
+        id: `derived-sitting-family-${family._id}`,
+        stripeSessionId: family.stripeSessionId,
+        stripeCustomerId: family.stripeCustomerId,
+        paymentType: 'sitting_family_membership',
+        applicationType: 'sitting_family',
+        applicationId: String(family._id),
+        applicationModel: 'SittingFamilyProfile',
+        applicantEmail: family.email,
+        applicantName: family.householdName,
+        amount: stripeService.getSittingFee('family_membership'),
+        status: derivedStatus,
+        createdAt: family.createdAt,
+        completedAt: family.updatedAt
+      }));
+    }
+  }
+
+  const direction = sortOrder === 'asc' ? 1 : -1;
+  return [...paymentDocs, ...derivedPayments].sort((a, b) => {
+    const aValue = getPaymentSortValue(a, sortBy);
+    const bValue = getPaymentSortValue(b, sortBy);
+    if (aValue < bValue) return -1 * direction;
+    if (aValue > bValue) return 1 * direction;
+    return 0;
+  });
+}
 
 // ============================================
 // DASHBOARD STATS
@@ -1058,29 +1275,20 @@ router.get('/payments', async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    const query = {};
-
-    if (status) query.status = status;
-    if (applicationType) query.applicationType = applicationType;
-
-    const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
-
-    const [payments, total] = await Promise.all([
-      Payment.find(query)
-        .sort(sort)
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit)),
-      Payment.countDocuments(query)
-    ]);
+    const unifiedPayments = await getUnifiedPayments({ status, applicationType, sortBy, sortOrder });
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const total = unifiedPayments.length;
+    const payments = unifiedPayments.slice((parsedPage - 1) * parsedLimit, parsedPage * parsedLimit);
 
     res.json({
       success: true,
       payments,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parsedPage,
+        limit: parsedLimit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / parsedLimit)
       }
     });
   } catch (error) {

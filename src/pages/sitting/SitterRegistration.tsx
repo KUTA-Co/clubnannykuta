@@ -15,7 +15,12 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isStandaloneApp } from "@/lib/pwa";
-import { getRegistrationData, saveRegistrationData } from "@/lib/registrationStorage";
+import {
+  getRegistrationCheckout,
+  getRegistrationData,
+  saveRegistrationCheckout,
+  saveRegistrationData
+} from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -245,13 +250,36 @@ export default function SitterRegistration() {
           return;
         }
 
+        const existingCheckout = getRegistrationCheckout('sitterRegistrationCheckout', payload.email);
+        if (existingCheckout?.sessionId && existingCheckout?.checkoutUrl) {
+          try {
+            const verifyResponse = await fetch(`${API_URL}/api/stripe/verify-session/${existingCheckout.sessionId}`);
+            const verifyResult = await verifyResponse.json();
+            if (verifyResult.success && verifyResult.paid) {
+              navigate(`/sitting/registration-complete?type=sitter&payment=success&session_id=${existingCheckout.sessionId}`);
+              return;
+            }
+          } catch (verifyError) {
+            console.warn('Could not verify existing sitter checkout session', verifyError);
+          }
+
+          window.location.assign(existingCheckout.checkoutUrl);
+          window.setTimeout(() => setIsSubmitting(false), 1500);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/api/sitting/auth/register/sitter`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: payload.email, firstName, lastName, phone: payload.phone, city: payload.city, state: payload.state, postalCode: payload.postalCode })
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (result.success && result.checkoutUrl) {
+          saveRegistrationCheckout('sitterRegistrationCheckout', {
+            email: payload.email,
+            sessionId: result.sessionId,
+            checkoutUrl: result.checkoutUrl
+          });
           setCheckoutUrl(result.checkoutUrl);
           window.location.assign(result.checkoutUrl);
           window.setTimeout(() => setIsSubmitting(false), 1500);

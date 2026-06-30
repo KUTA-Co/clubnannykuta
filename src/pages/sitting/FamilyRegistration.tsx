@@ -15,7 +15,12 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isStandaloneApp } from "@/lib/pwa";
-import { saveRegistrationData } from "@/lib/registrationStorage";
+import {
+  getRegistrationCheckout,
+  getRegistrationData,
+  saveRegistrationCheckout,
+  saveRegistrationData
+} from "@/lib/registrationStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -52,6 +57,54 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const emptyDefaults: FormData = {
+  email: "",
+  password: "",
+  confirmPassword: "",
+  parentName: "",
+  phone: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  numberOfChildren: 1,
+  childrenAges: "",
+  specialNeeds: "",
+  howDidYouHear: "",
+  faithBackground: "",
+  familyValues: "",
+  membershipConsent: false,
+};
+
+function getSavedDefaults(): FormData {
+  const saved = getRegistrationData('familyRegistrationData');
+  if (!saved) return emptyDefaults;
+
+  try {
+    const data = JSON.parse(saved);
+    return {
+      ...emptyDefaults,
+      email: data.email || "",
+      password: data.password || "",
+      confirmPassword: data.password || "",
+      parentName: data.householdName || "",
+      phone: data.phone || "",
+      city: data.city || "",
+      state: data.state || "",
+      postalCode: data.postalCode || "",
+      numberOfChildren: Number(data.numberOfChildren || 1),
+      childrenAges: data.childrenAges || "",
+      specialNeeds: data.specialNeeds || "",
+      howDidYouHear: data.howDidYouHear || "",
+      faithBackground: data.faithBackground || "",
+      familyValues: data.familyValues || "",
+      membershipConsent: true,
+    };
+  } catch (error) {
+    console.warn('Could not restore saved family registration data', error);
+    return emptyDefaults;
+  }
+}
+
 export default function FamilyRegistration() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -62,23 +115,7 @@ export default function FamilyRegistration() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      parentName: "",
-      phone: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      numberOfChildren: 1,
-      childrenAges: "",
-      specialNeeds: "",
-      howDidYouHear: "",
-      faithBackground: "",
-      familyValues: "",
-      membershipConsent: false,
-    },
+    defaultValues: getSavedDefaults(),
     mode: "onChange"
   });
 
@@ -159,13 +196,35 @@ export default function FamilyRegistration() {
           return;
         }
 
+        const existingCheckout = getRegistrationCheckout('familyRegistrationCheckout', payload.email);
+        if (existingCheckout?.sessionId && existingCheckout?.checkoutUrl) {
+          try {
+            const verifyResponse = await fetch(`${API_URL}/api/stripe/verify-session/${existingCheckout.sessionId}`);
+            const verifyResult = await verifyResponse.json();
+            if (verifyResult.success && verifyResult.paid) {
+              navigate(`/sitting/registration-complete?type=sitting_family&payment=success&session_id=${existingCheckout.sessionId}`);
+              return;
+            }
+          } catch (verifyError) {
+            console.warn('Could not verify existing family checkout session', verifyError);
+          }
+
+          window.location.assign(existingCheckout.checkoutUrl);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/api/sitting/auth/register/family`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: payload.email, householdName: payload.householdName, city: payload.city, state: payload.state })
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (result.success && result.checkoutUrl) {
+          saveRegistrationCheckout('familyRegistrationCheckout', {
+            email: payload.email,
+            sessionId: result.sessionId,
+            checkoutUrl: result.checkoutUrl
+          });
           window.location.assign(result.checkoutUrl);
           return;
         }
