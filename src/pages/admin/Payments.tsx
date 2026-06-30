@@ -64,6 +64,7 @@ export default function Payments() {
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSyncingStripe, setIsSyncingStripe] = useState(false);
 
   // Action states
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
@@ -314,6 +315,39 @@ export default function Payments() {
     }
   };
 
+  const syncStripeApplications = async () => {
+    setIsSyncingStripe(true);
+    try {
+      const response = await authFetch('/api/admin/payments/sync-stripe-applications', {
+        method: "POST",
+        body: JSON.stringify({ since: "2026-06-16", dryRun: false })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const summary = data.summary || {};
+        toast({
+          title: "Stripe Sync Complete",
+          description: `${summary.createdApplications || 0} applications and ${summary.createdPayments || 0} payments recovered.`,
+        });
+        fetchPayments(pagination?.page || 1);
+        fetchAllPaymentsForCounts();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Stripe sync error:", error);
+      toast({
+        title: "Stripe Sync Failed",
+        description: error instanceof Error ? error.message : "Could not sync Stripe payments",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingStripe(false);
+    }
+  };
+
   // Calculate stats from ALL payments (always shows overall totals)
   const allCompletedPayments = allPayments.filter(p => p.status === "completed");
   const allPendingPayments = allPayments.filter(p => p.status === "pending");
@@ -333,15 +367,26 @@ export default function Payments() {
           <h1 className="text-3xl font-bold font-heading text-[#1A1A1A]">Payments</h1>
           <p className="text-gray-500 mt-1">Track all payment transactions and invoices</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => fetchPayments(pagination?.page || 1)}
-          disabled={isLoading}
-          className="border-gray-200"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={syncStripeApplications}
+            disabled={isSyncingStripe}
+            className="border-gray-200"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncingStripe ? 'animate-spin' : ''}`} />
+            Sync Stripe
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => fetchPayments(pagination?.page || 1)}
+            disabled={isLoading}
+            className="border-gray-200"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

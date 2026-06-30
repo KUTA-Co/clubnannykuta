@@ -102,19 +102,21 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
 
   if (includeType('family')) {
     const familyApplications = await FamilyApplication.find({
-      stripeSessionId: hasPaymentSession,
-      paymentStatus: { $in: ['paid', 'pending', 'refunded'] }
+      $or: [
+        { stripeSessionId: hasPaymentSession, paymentStatus: { $in: ['paid', 'pending', 'refunded'] } },
+        { paymentStatus: 'paid' }
+      ]
     }).lean();
 
     for (const application of familyApplications) {
       const derivedStatus = paymentStatusFromApplication(application.paymentStatus);
       const applicationKey = `family:${application._id}`;
       if (!derivedStatus || !includeStatus(derivedStatus)) continue;
-      if (seenSessions.has(application.stripeSessionId) || seenApplicationKeys.has(applicationKey)) continue;
+      if ((application.stripeSessionId && seenSessions.has(application.stripeSessionId)) || seenApplicationKeys.has(applicationKey)) continue;
 
       derivedPayments.push(makeDerivedPayment({
         id: `derived-family-${application._id}`,
-        stripeSessionId: application.stripeSessionId,
+        stripeSessionId: application.stripeSessionId || `legacy-family-${application._id}`,
         stripePaymentIntentId: application.stripePaymentIntentId,
         applicationType: 'family',
         applicationId: String(application._id),
@@ -124,26 +126,29 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
         amount: stripeService.getApplicationFee('family'),
         status: derivedStatus,
         createdAt: application.createdAt,
-        completedAt: derivedStatus === 'completed' ? application.updatedAt : undefined
+        completedAt: derivedStatus === 'completed' ? (application.updatedAt || application.createdAt) : undefined,
+        metadata: application.stripeSessionId ? undefined : { legacyPayment: true }
       }));
     }
   }
 
   if (includeType('nanny')) {
     const nannyApplications = await NannyApplication.find({
-      stripeSessionId: hasPaymentSession,
-      paymentStatus: { $in: ['paid', 'pending', 'refunded'] }
+      $or: [
+        { stripeSessionId: hasPaymentSession, paymentStatus: { $in: ['paid', 'pending', 'refunded'] } },
+        { paymentStatus: 'paid' }
+      ]
     }).lean();
 
     for (const application of nannyApplications) {
       const derivedStatus = paymentStatusFromApplication(application.paymentStatus);
       const applicationKey = `nanny:${application._id}`;
       if (!derivedStatus || !includeStatus(derivedStatus)) continue;
-      if (seenSessions.has(application.stripeSessionId) || seenApplicationKeys.has(applicationKey)) continue;
+      if ((application.stripeSessionId && seenSessions.has(application.stripeSessionId)) || seenApplicationKeys.has(applicationKey)) continue;
 
       derivedPayments.push(makeDerivedPayment({
         id: `derived-nanny-${application._id}`,
-        stripeSessionId: application.stripeSessionId,
+        stripeSessionId: application.stripeSessionId || `legacy-nanny-${application._id}`,
         stripePaymentIntentId: application.stripePaymentIntentId,
         applicationType: 'nanny',
         applicationId: String(application._id),
@@ -153,7 +158,8 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
         amount: stripeService.getApplicationFee('nanny'),
         status: derivedStatus,
         createdAt: application.createdAt,
-        completedAt: derivedStatus === 'completed' ? application.updatedAt : undefined
+        completedAt: derivedStatus === 'completed' ? (application.updatedAt || application.createdAt) : undefined,
+        metadata: application.stripeSessionId ? undefined : { legacyPayment: true }
       }));
     }
   }
@@ -1263,6 +1269,169 @@ router.delete('/matches/:id', async (req, res) => {
 // ============================================
 // PAYMENTS
 // ============================================
+
+router.post('/payments/sync-stripe-applications', async (req, res) => {
+  try {
+    const {
+      since = '2026-06-16',
+      dryRun = false,
+      maxSessions = 300
+    } = req.body || {};
+
+    const sinceDate = new Date(`${since}T00:00:00.000Z`);
+    if (Number.isNaN(sinceDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid since date. Use YYYY-MM-DD.'
+      });
+    }
+
+    const stripe = stripeService.ensureConfigured();
+    const sessions = [];
+    let startingAfter;
+
+    while (sessions.length < Number(maxSessions)) {
+      const page = await stripe.checkout.sessions.list({
+        limit: Math.min(100, Number(maxSessions) - sessions.length),
+        created: { gte: Math.floor(sinceDate.getTime() / 1000) },
+        ...(startingAfter ? { starting_after: startingAfter } : {})
+      });
+
+      sessions.push(...page.data);
+      if (!page.has_more || !page.data.length) break;
+      startingAfter = page.data[page.data.length - 1].id;
+    }
+
+    const summary = {
+      scanned: sessions.length,
+      applicationSessions: 0,
+      createdApplications: 0,
+      updatedApplications: 0,
+      createdPayments: 0,
+      updatedPayments: 0,
+      skipped: 0,
+      dryRun: Boolean(dryRun),
+      recovered: []
+    };
+
+    for (const session of sessions) {
+      const applicationType = session.metadata?.applicationType;
+      if (!['family', 'nanny'].includes(applicationType)) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      summary.applicationSessions += 1;
+
+      const email = (session.metadata?.applicantEmail || session.customer_email || '').toLowerCase();
+      const applicantName = session.metadata?.applicantName || session.customer_details?.name || 'Recovered Applicant';
+      const paymentStatus = session.payment_status === 'paid' ? 'paid' : 'pending';
+      const recordStatus = session.payment_status === 'paid' ? 'completed' : 'pending';
+      const createdAt = new Date(session.created * 1000);
+      const dateWindowStart = new Date(createdAt.getTime() - 3 * 24 * 60 * 60 * 1000);
+      const dateWindowEnd = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const Model = applicationType === 'family' ? FamilyApplication : NannyApplication;
+      const nameField = applicationType === 'family' ? 'parentName' : 'fullName';
+      const applicationModel = applicationType === 'family' ? 'FamilyApplication' : 'NannyApplication';
+      const amount = Number(session.amount_total || stripeService.getApplicationFee(applicationType));
+
+      if (!email) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      let application = await Model.findOne({ stripeSessionId: session.id });
+      if (!application) {
+        application = await Model.findOne({
+          email,
+          createdAt: { $gte: dateWindowStart, $lte: dateWindowEnd }
+        });
+      }
+
+      if (!application) {
+        if (!dryRun) {
+          application = await Model.create({
+            [nameField]: applicantName,
+            email,
+            status: 'pending',
+            paymentStatus,
+            stripeSessionId: session.id,
+            stripePaymentIntentId: session.payment_intent || undefined,
+            createdAt,
+            updatedAt: createdAt,
+            reviewNotes: 'Recovered from Stripe payment because the application record was missing after payment.'
+          });
+        }
+        summary.createdApplications += 1;
+      } else {
+        if (!dryRun) {
+          application.paymentStatus = paymentStatus;
+          application.stripeSessionId = session.id;
+          application.stripePaymentIntentId = session.payment_intent || application.stripePaymentIntentId;
+          await application.save();
+        }
+        summary.updatedApplications += 1;
+      }
+
+      let payment = await Payment.findOne({ stripeSessionId: session.id });
+      if (!payment && application?._id) {
+        if (!dryRun) {
+          payment = await Payment.create({
+            stripeSessionId: session.id,
+            stripePaymentIntentId: session.payment_intent || undefined,
+            stripeCustomerId: session.customer || undefined,
+            paymentType: 'application',
+            applicationType,
+            applicationId: application._id,
+            applicationModel,
+            applicantEmail: email,
+            applicantName,
+            amount,
+            status: recordStatus,
+            completedAt: session.payment_status === 'paid' ? createdAt : undefined,
+            metadata: {
+              recoveredFromStripe: true
+            }
+          });
+        }
+        summary.createdPayments += 1;
+      } else if (payment) {
+        if (!dryRun) {
+          payment.status = recordStatus;
+          payment.amount = amount;
+          payment.stripePaymentIntentId = session.payment_intent || payment.stripePaymentIntentId;
+          payment.stripeCustomerId = session.customer || payment.stripeCustomerId;
+          payment.completedAt = session.payment_status === 'paid' ? (payment.completedAt || createdAt) : payment.completedAt;
+          await payment.save();
+        }
+        summary.updatedPayments += 1;
+      }
+
+      summary.recovered.push({
+        type: applicationType,
+        name: applicantName,
+        email,
+        paymentStatus,
+        amount,
+        sessionId: session.id,
+        createdAt
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Stripe sync complete: ${summary.createdApplications} applications created, ${summary.createdPayments} payments created.`,
+      summary
+    });
+  } catch (error) {
+    console.error('Stripe application payment sync error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync Stripe application payments',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 router.get('/payments', async (req, res) => {
   try {
