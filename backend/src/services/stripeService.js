@@ -185,51 +185,6 @@ class StripeService {
   }
 
   /**
-   * Find a recent paid sitting checkout session for an email address.
-   * This is a safety net for live-domain/browser-storage failures after Stripe:
-   * if a user paid but their local registration data was lost, we can bind their
-   * next submitted form to the already-paid session instead of charging again.
-   */
-  async findRecentPaidSittingCheckoutSession({ type, email, createdWithinDays = 30 }) {
-    const normalizedEmail = String(email || '').trim().toLowerCase();
-    if (!normalizedEmail) return null;
-
-    const createdAfter = Math.floor((Date.now() - createdWithinDays * 24 * 60 * 60 * 1000) / 1000);
-    const expectedAmount = type === 'sitter'
-      ? SITTING_FEES.sitter_application + SITTING_FEES.sitter_membership
-      : SITTING_FEES.family_membership;
-
-    const stripeClient = this.ensureConfigured();
-    let match = null;
-
-    await stripeClient.checkout.sessions
-      .list({ limit: 100, created: { gte: createdAfter } })
-      .autoPagingEach((session) => {
-        const sessionEmail = (
-          session.customer_email ||
-          session.customer_details?.email ||
-          session.metadata?.applicantEmail ||
-          ''
-        ).toLowerCase();
-
-        const isMatch =
-          session.payment_status === 'paid' &&
-          session.metadata?.registrationType === type &&
-          sessionEmail === normalizedEmail &&
-          Number(session.amount_total || 0) === expectedAmount;
-
-        if (isMatch) {
-          match = session;
-          return false;
-        }
-
-        return true;
-      });
-
-    return match;
-  }
-
-  /**
    * Verify webhook signature
    * @param {string} payload - Raw request body
    * @param {string} signature - Stripe-Signature header

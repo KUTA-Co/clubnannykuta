@@ -238,54 +238,6 @@ router.post('/register/sitter', async (req, res) => {
       await profile.save();
     }
 
-    const paidSession = await stripeService.findRecentPaidSittingCheckoutSession({
-      type: 'sitter',
-      email: normalizedEmail
-    });
-
-    if (paidSession && (!profile || !profile.applicationFeePaid)) {
-      user = await ensureSittingUser({
-        email: normalizedEmail,
-        password,
-        role: 'sitter',
-        firstName,
-        lastName,
-        phone
-      });
-
-      if (!profile) {
-        profile = new SitterProfile({
-          userId: user._id,
-          firstName,
-          lastName,
-          email: normalizedEmail,
-          phone,
-          city,
-          state,
-          postalCode: postalCode || '',
-          status: 'pending_payment',
-          membershipStatus: 'inactive',
-          hourlyRate: req.body.hourlyRate || req.body.hourlyRate1Kid || 20,
-          hourlyRate1Kid: req.body.hourlyRate1Kid || req.body.hourlyRate || 20,
-          hourlyRate2Kids: req.body.hourlyRate2Kids || 25,
-          hourlyRate3PlusKids: req.body.hourlyRate3PlusKids || 30
-        });
-      }
-
-      applySitterFields(profile, req.body);
-      profile.stripeSessionId = paidSession.id;
-      profile.stripePaymentIntentId = paidSession.payment_intent;
-      profile.stripeCustomerId = paidSession.customer;
-      await profile.save();
-
-      return res.json({
-        success: true,
-        paid: true,
-        sessionId: paidSession.id,
-        message: 'We found your completed payment. Finalizing registration now.'
-      });
-    }
-
     if (profile?.stripeSessionId) {
       try {
         const existingSession = await stripeService.getSession(profile.stripeSessionId);
@@ -604,47 +556,6 @@ router.post('/register/family', async (req, res) => {
 
       applySittingFamilyFields(profile, req.body);
       await profile.save();
-    }
-
-    const paidSession = await stripeService.findRecentPaidSittingCheckoutSession({
-      type: 'sitting_family',
-      email: normalizedEmail
-    });
-
-    if (paidSession && (!profile || profile.membershipStatus !== 'active')) {
-      user = await ensureSittingUser({
-        email: normalizedEmail,
-        password,
-        role: 'family',
-        firstName: householdName,
-        phone
-      });
-
-      if (!profile) {
-        profile = new SittingFamilyProfile({
-          userId: user._id,
-          householdName,
-          email: normalizedEmail,
-          phone: phone || '',
-          city,
-          state,
-          postalCode: postalCode || '',
-          status: 'pending_payment',
-          membershipStatus: 'inactive'
-        });
-      }
-
-      applySittingFamilyFields(profile, req.body);
-      profile.stripeSessionId = paidSession.id;
-      profile.stripeCustomerId = paidSession.customer;
-      await profile.save();
-
-      return res.json({
-        success: true,
-        paid: true,
-        sessionId: paidSession.id,
-        message: 'We found your completed payment. Finalizing registration now.'
-      });
     }
 
     if (profile?.stripeSessionId) {
