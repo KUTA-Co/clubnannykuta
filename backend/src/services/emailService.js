@@ -1388,6 +1388,19 @@ class EmailService {
         <center>
           <a href="${appUrl}" class="cta-button">Open Club Nanny App</a>
         </center>
+
+        <div class="highlight-box">
+          <h3>How to download the app</h3>
+          <p>Club Nanny is a web app. You do not download it from the App Store or Google Play.</p>
+          <p>Open this link in your browser: <a href="${appUrl}" style="color: #8BA99E;">${appUrl}</a></p>
+          <p>On iPhone or iPad, tap the Share button and choose <strong>Add to Home Screen</strong>. On Android, Chrome, Edge, or desktop, use the browser menu or install icon and choose <strong>Install</strong> or <strong>Add to Home screen</strong>.</p>
+        </div>
+
+        <div class="highlight-box">
+          <h3>Turn on notifications</h3>
+          <p>After logging in, go to <strong>My Household</strong> and enable Club Nanny push notifications. Please make sure browser notifications are allowed for Club Nanny.</p>
+          <p>You can use the <strong>Test Notification</strong> button in the app to confirm notifications are working on your device.</p>
+        </div>
       </div>
     `);
 

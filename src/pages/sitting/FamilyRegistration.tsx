@@ -219,6 +219,15 @@ export default function FamilyRegistration() {
           body: JSON.stringify(payload)
         });
         const result = await response.json();
+        if (result.success && result.paid && result.sessionId) {
+          saveRegistrationCheckout('familyRegistrationCheckout', {
+            email: payload.email,
+            sessionId: result.sessionId,
+            checkoutUrl: result.checkoutUrl || ''
+          });
+          navigate(`/sitting/registration-complete?type=sitting_family&payment=success&session_id=${result.sessionId}`);
+          return;
+        }
         if (result.success && result.checkoutUrl) {
           saveRegistrationCheckout('familyRegistrationCheckout', {
             email: payload.email,

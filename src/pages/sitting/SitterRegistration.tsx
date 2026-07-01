@@ -274,6 +274,15 @@ export default function SitterRegistration() {
           body: JSON.stringify(payload)
         });
         const result = await response.json();
+        if (result.success && result.paid && result.sessionId) {
+          saveRegistrationCheckout('sitterRegistrationCheckout', {
+            email: payload.email,
+            sessionId: result.sessionId,
+            checkoutUrl: result.checkoutUrl || ''
+          });
+          navigate(`/sitting/registration-complete?type=sitter&payment=success&session_id=${result.sessionId}`);
+          return;
+        }
         if (result.success && result.checkoutUrl) {
           saveRegistrationCheckout('sitterRegistrationCheckout', {
             email: payload.email,

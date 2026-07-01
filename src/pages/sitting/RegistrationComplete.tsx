@@ -39,17 +39,20 @@ export default function RegistrationComplete() {
     setErrorMessage('');
 
     try {
-      // Get stored form data
+      // Get stored form data. On live domains the user may start on www and
+      // return from Stripe on the apex domain, so local storage can be empty.
+      // The backend now stores pending registration data server-side and can
+      // finalize with only the paid Stripe session id.
       const storageKey = type === 'sitter' ? 'sitterRegistrationData' : 'familyRegistrationData';
       const storedData = getRegistrationData(storageKey);
-
-      if (!storedData) {
-        setStatus('error');
-        setErrorMessage('Registration data not found. Please start the registration process again.');
-        return;
+      let formData = {};
+      if (storedData) {
+        try {
+          formData = JSON.parse(storedData);
+        } catch (parseError) {
+          console.warn('Could not parse stored registration data; falling back to server-side registration recovery', parseError);
+        }
       }
-
-      const formData = JSON.parse(storedData);
 
       // Complete registration
       const endpoint = type === 'sitter'
@@ -80,7 +83,7 @@ export default function RegistrationComplete() {
         setStatus('success');
       } else {
         setStatus('error');
-        setErrorMessage(result.message || 'Failed to complete registration');
+        setErrorMessage(result.message || 'Failed to complete registration. If your payment went through, please contact Club Nanny before trying another payment.');
       }
     } catch (error) {
       console.error('Registration completion error:', error);

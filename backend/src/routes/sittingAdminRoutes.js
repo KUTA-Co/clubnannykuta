@@ -45,7 +45,7 @@ router.get('/sitters', async (req, res) => {
   try {
     const { status, membershipStatus, search, page = 1, limit = 20 } = req.query;
 
-    const query = {};
+    const query = status ? {} : { status: { $ne: 'pending_payment' } };
 
     if (status) {
       query.status = status;
@@ -508,7 +508,7 @@ router.get('/families', async (req, res) => {
   try {
     const { status, membershipStatus, search, page = 1, limit = 20 } = req.query;
 
-    const query = {};
+    const query = status ? {} : { status: { $ne: 'pending_payment' } };
 
     if (status) {
       query.status = status;
