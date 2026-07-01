@@ -130,8 +130,8 @@ router.post('/family-application', async (req, res) => {
       });
     }
 
-    // Save application to database
-    const application = await FamilyApplication.create({
+    // Prepare the application, but do not save or notify until Stripe checkout exists.
+    const application = new FamilyApplication({
       parentName: data.parentName || data.parent_name,
       email: data.email,
       phone: data.phone,
@@ -152,17 +152,9 @@ router.post('/family-application', async (req, res) => {
       experienceLevel: data.experienceLevel || data.experience_level,
       personalityPreferences: data.personalityPreferences || data.personality_preferences,
       additionalInfo: data.additionalInfo || data.additional_info,
-      status: 'pending',
-      paymentStatus: 'unpaid'
+      status: 'pending_payment',
+      paymentStatus: 'pending'
     });
-
-    const emailResult = await emailService.handleApplicationSubmitted({
-      type: 'family',
-      application: application.toObject()
-    });
-    if (!emailResult.success) {
-      console.error('Family application notification emails failed:', emailResult);
-    }
 
     // Create Stripe checkout session
     try {
@@ -192,18 +184,16 @@ router.post('/family-application', async (req, res) => {
 
       res.json({
         success: true,
-        message: 'Application saved. Redirecting to payment.',
+        message: 'Payment checkout started. Redirecting to payment.',
         applicationId: application._id,
         checkoutUrl: session.url,
         sessionId: session.id
       });
     } catch (stripeError) {
       console.error('Stripe error:', stripeError);
-      // If Stripe fails, still save the application but notify about payment
-      res.json({
-        success: true,
-        message: 'Application saved. Payment processing unavailable.',
-        applicationId: application._id,
+      res.status(502).json({
+        success: false,
+        message: 'Could not start Stripe checkout. The application has not been submitted.',
         paymentRequired: true
       });
     }
@@ -250,8 +240,8 @@ router.post('/nanny-application', async (req, res) => {
       });
     }
 
-    // Save application to database
-    const application = await NannyApplication.create({
+    // Prepare the application, but do not save or notify until Stripe checkout exists.
+    const application = new NannyApplication({
       fullName: data.fullName || data.full_name,
       email: data.email,
       phone: data.phone,
@@ -274,17 +264,9 @@ router.post('/nanny-application', async (req, res) => {
       ageGroupPreferences: data.ageGroupPreferences || data.age_group_preferences,
       additionalInfo: data.additionalInfo || data.additional_info,
       backgroundCheckConsent: true,
-      status: 'pending',
-      paymentStatus: 'unpaid'
+      status: 'pending_payment',
+      paymentStatus: 'pending'
     });
-
-    const emailResult = await emailService.handleApplicationSubmitted({
-      type: 'nanny',
-      application: application.toObject()
-    });
-    if (!emailResult.success) {
-      console.error('Nanny application notification emails failed:', emailResult);
-    }
 
     // Create Stripe checkout session
     try {
@@ -314,18 +296,16 @@ router.post('/nanny-application', async (req, res) => {
 
       res.json({
         success: true,
-        message: 'Application saved. Redirecting to payment.',
+        message: 'Payment checkout started. Redirecting to payment.',
         applicationId: application._id,
         checkoutUrl: session.url,
         sessionId: session.id
       });
     } catch (stripeError) {
       console.error('Stripe error:', stripeError);
-      // If Stripe fails, still save the application but notify about payment
-      res.json({
-        success: true,
-        message: 'Application saved. Payment processing unavailable.',
-        applicationId: application._id,
+      res.status(502).json({
+        success: false,
+        message: 'Could not start Stripe checkout. The application has not been submitted.',
         paymentRequired: true
       });
     }
@@ -391,6 +371,69 @@ router.post('/complete-application', async (req, res) => {
         message: 'Application already processed',
         applicationId: existingPayment.applicationId
       });
+    }
+
+    // Legacy checkout sessions may already have a pending application record.
+    // Mark that existing record as submitted only after Stripe confirms payment.
+    const existingApplicationId = session.metadata?.applicationId || existingPayment?.applicationId;
+    if (existingApplicationId) {
+      const Model = type === 'family' ? FamilyApplication : NannyApplication;
+      const existingApplication = await Model.findById(existingApplicationId);
+
+      if (existingApplication) {
+        existingApplication.status = existingApplication.status === 'pending_payment' ? 'pending' : existingApplication.status;
+        existingApplication.paymentStatus = 'paid';
+        existingApplication.stripeSessionId = sessionId;
+        existingApplication.stripePaymentIntentId = session.payment_intent;
+        await existingApplication.save();
+
+        const applicantName = type === 'family' ? existingApplication.parentName : existingApplication.fullName;
+        if (existingPayment) {
+          existingPayment.status = 'completed';
+          existingPayment.applicationId = existingApplication._id;
+          existingPayment.applicationModel = type === 'family' ? 'FamilyApplication' : 'NannyApplication';
+          existingPayment.stripePaymentIntentId = session.payment_intent;
+          existingPayment.stripeCustomerId = session.customer;
+          existingPayment.completedAt = new Date();
+          await existingPayment.save();
+        } else {
+          await Payment.create({
+            stripeSessionId: sessionId,
+            stripePaymentIntentId: session.payment_intent,
+            stripeCustomerId: session.customer,
+            applicationType: type,
+            applicationId: existingApplication._id,
+            applicationModel: type === 'family' ? 'FamilyApplication' : 'NannyApplication',
+            applicantEmail: existingApplication.email,
+            applicantName,
+            amount: stripeService.getApplicationFee(type),
+            status: 'completed',
+            completedAt: new Date()
+          });
+        }
+
+        try {
+          await emailService.handleApplicationSubmitted({
+            type,
+            application: existingApplication.toObject()
+          });
+
+          await emailService.sendPaymentConfirmation({
+            email: existingApplication.email,
+            name: applicantName,
+            type,
+            amount: stripeService.getApplicationFee(type)
+          });
+        } catch (emailError) {
+          console.error('Failed to send notification emails (non-fatal):', emailError.message);
+        }
+
+        return res.json({
+          success: true,
+          message: 'Application submitted successfully',
+          applicationId: existingApplication._id
+        });
+      }
     }
 
     // 3. NOW save application to database

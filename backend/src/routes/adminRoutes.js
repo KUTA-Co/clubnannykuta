@@ -166,10 +166,7 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
 
   if (includeType('sitter')) {
     const sitters = await SitterProfile.find({
-      $or: [
-        { stripeSessionId: hasPaymentSession },
-        { applicationFeePaid: true }
-      ]
+      applicationFeePaid: true
     }).lean();
 
     for (const sitter of sitters) {
@@ -204,7 +201,8 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
 
   if (includeType('sitting_family')) {
     const sittingFamilies = await SittingFamilyProfile.find({
-      stripeSessionId: hasPaymentSession
+      stripeSessionId: hasPaymentSession,
+      membershipStatus: 'active'
     }).lean();
 
     for (const family of sittingFamilies) {
@@ -247,6 +245,7 @@ async function getUnifiedPayments({ status, applicationType, sortBy = 'createdAt
 
 router.get('/dashboard/stats', async (req, res) => {
   try {
+    const visibleApplicationQuery = { status: { $ne: 'pending_payment' } };
     const [
       totalFamilyApps,
       pendingFamilyApps,
@@ -257,9 +256,9 @@ router.get('/dashboard/stats', async (req, res) => {
       recentPaymentsData,
       newContacts
     ] = await Promise.all([
-      FamilyApplication.countDocuments(),
+      FamilyApplication.countDocuments(visibleApplicationQuery),
       FamilyApplication.countDocuments({ status: 'pending' }),
-      NannyApplication.countDocuments(),
+      NannyApplication.countDocuments(visibleApplicationQuery),
       NannyApplication.countDocuments({ status: 'pending' }),
       User.countDocuments(),
       Payment.countDocuments({ status: 'completed' }),
@@ -273,12 +272,12 @@ router.get('/dashboard/stats', async (req, res) => {
     const totalRevenue = recentPaymentsData[0]?.total || 0;
 
     // Get recent activity
-    const recentFamilyApps = await FamilyApplication.find()
+    const recentFamilyApps = await FamilyApplication.find(visibleApplicationQuery)
       .sort({ createdAt: -1 })
       .limit(5)
       .select('parentName email status paymentStatus createdAt');
 
-    const recentNannyApps = await NannyApplication.find()
+    const recentNannyApps = await NannyApplication.find(visibleApplicationQuery)
       .sort({ createdAt: -1 })
       .limit(5)
       .select('fullName email status paymentStatus createdAt');
@@ -371,7 +370,11 @@ router.get('/applications/family', async (req, res) => {
 
     const query = {};
 
-    if (status) query.status = status;
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = { $ne: 'pending_payment' };
+    }
     if (paymentStatus) query.paymentStatus = paymentStatus;
     if (search) {
       query.$or = [
@@ -448,6 +451,13 @@ router.post('/applications/family/:id/send-confirmation', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Application not found'
+      });
+    }
+
+    if (application.status === 'pending_payment' || application.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirmation email can only be sent after payment is completed'
       });
     }
 
@@ -603,7 +613,11 @@ router.get('/applications/nanny', async (req, res) => {
 
     const query = {};
 
-    if (status) query.status = status;
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = { $ne: 'pending_payment' };
+    }
     if (paymentStatus) query.paymentStatus = paymentStatus;
     if (search) {
       query.$or = [
@@ -681,6 +695,13 @@ router.post('/applications/nanny/:id/send-confirmation', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Application not found'
+      });
+    }
+
+    if (application.status === 'pending_payment' || application.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirmation email can only be sent after payment is completed'
       });
     }
 

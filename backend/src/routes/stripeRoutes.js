@@ -371,6 +371,9 @@ async function handlePaymentSuccess(session) {
     } else {
       // Regular application fee
       application.paymentStatus = 'paid';
+      if (application.status === 'pending_payment') {
+        application.status = 'pending';
+      }
     }
     application.stripePaymentIntentId = session.payment_intent;
     await application.save();

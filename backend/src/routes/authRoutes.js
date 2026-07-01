@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { User } from '../models/index.js';
+import { User, SitterProfile, SittingFamilyProfile } from '../models/index.js';
 import emailService from '../services/emailService.js';
 import { isValidEmail } from '../middleware/sanitize.js';
 
@@ -138,6 +138,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
+      });
+    }
+
+    const [pendingSitterProfile, pendingSittingFamilyProfile] = await Promise.all([
+      SitterProfile.findOne({ userId: user._id, status: 'pending_payment' }).select('_id'),
+      SittingFamilyProfile.findOne({ userId: user._id, status: 'pending_payment' }).select('_id')
+    ]);
+
+    if (pendingSitterProfile || pendingSittingFamilyProfile) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please complete payment before logging in to the Club Nanny app.'
       });
     }
 

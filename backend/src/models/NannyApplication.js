@@ -106,7 +106,7 @@ const nannyApplicationSchema = new mongoose.Schema({
   // Application Status
   status: {
     type: String,
-    enum: ['pending', 'reviewing', 'approved', 'rejected', 'matched', 'inactive'],
+    enum: ['pending_payment', 'pending', 'reviewing', 'approved', 'rejected', 'matched', 'inactive'],
     default: 'pending'
   },
 

@@ -298,7 +298,6 @@ class StripeService {
       line_items: lineItems,
       mode: 'payment',
       customer_email: email,
-      allow_promotion_codes: true,
       metadata,
       payment_intent_data: {
         metadata

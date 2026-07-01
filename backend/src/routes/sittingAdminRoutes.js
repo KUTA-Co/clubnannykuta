@@ -172,6 +172,13 @@ router.post('/sitters/:id/send-confirmation', async (req, res) => {
       });
     }
 
+    if (sitter.status === 'pending_payment' || !sitter.applicationFeePaid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Application confirmation email can only be sent after payment is completed'
+      });
+    }
+
     const result = await emailService.sendSitterApplicationSubmittedToApplicant(sitterPayloadWithCurrentEmail(sitter));
 
     res.json({
@@ -609,6 +616,13 @@ router.post('/families/:id/send-confirmation', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Family not found'
+      });
+    }
+
+    if (family.status === 'pending_payment' || family.membershipStatus !== 'active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirmation email can only be sent after payment is completed'
       });
     }
 
