@@ -102,6 +102,7 @@ export default function ApplicationSubmitted() {
 
         // Success! Clear sessionStorage
         sessionStorage.removeItem('pendingApplication');
+        sessionStorage.setItem('club_nanny_application_completed', pendingApp.type);
         setIsPaid(true);
         setIsVerifying(false);
 

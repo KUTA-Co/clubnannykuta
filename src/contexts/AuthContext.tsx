@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { isStandaloneApp } from '@/lib/pwa';
 
 // Simple token expiry check
 const isTokenExpired = (token: string): boolean => {
@@ -24,8 +25,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: ((email: string, password: string) => Promise<{ success: boolean; message?: string }>) & ((token: string, user: User) => void);
-  register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
+  login: ((email: string, password: string) => Promise<{ success: boolean; message?: string; token?: string; user?: User }>) & ((token: string, user: User) => void);
+  register: (data: RegisterData) => Promise<{ success: boolean; message?: string; token?: string; user?: User }>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -45,6 +46,38 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 const TOKEN_KEY = 'club_nanny_token';
 const USER_KEY = 'club_nanny_user';
 
+function getAuthStorage() {
+  if (typeof window === 'undefined') return null;
+  return isStandaloneApp() ? window.sessionStorage : window.localStorage;
+}
+
+function clearAuthStorage() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    // ignored
+  }
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
+  } catch {
+    // ignored
+  }
+}
+
+function writeAuthStorage(authToken: string, authUser: User) {
+  clearAuthStorage();
+  const storage = getAuthStorage();
+  storage?.setItem(TOKEN_KEY, authToken);
+  storage?.setItem(USER_KEY, JSON.stringify(authUser));
+}
+
+function writeStoredUser(authUser: User) {
+  const storage = getAuthStorage();
+  storage?.setItem(USER_KEY, JSON.stringify(authUser));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -54,14 +87,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const savedToken = localStorage.getItem(TOKEN_KEY);
-        const savedUser = localStorage.getItem(USER_KEY);
+        if (isStandaloneApp()) {
+          // A reinstalled/opened PWA should not silently reuse browser-persistent credentials.
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+        }
+
+        const storage = getAuthStorage();
+        const savedToken = storage?.getItem(TOKEN_KEY);
+        const savedUser = storage?.getItem(USER_KEY);
 
         if (savedToken && savedUser) {
           // Check if token is expired locally first
           if (isTokenExpired(savedToken)) {
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
+            clearAuthStorage();
             setIsLoading(false);
             return;
           }
@@ -79,14 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(data.user);
           } else {
             // Token invalid, clear storage
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
+            clearAuthStorage();
           }
         }
       } catch (error) {
         console.error('Auth load error:', error);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        clearAuthStorage();
       } finally {
         setIsLoading(false);
       }
@@ -95,16 +132,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadAuth();
   }, []);
 
-  const login = async (emailOrToken: string, passwordOrUser?: string | User): Promise<{ success: boolean; message?: string }> => {
+  const login = async (emailOrToken: string, passwordOrUser?: string | User): Promise<{ success: boolean; message?: string; token?: string; user?: User }> => {
     // If second arg is a User object, this is a direct token login (from registration)
     if (typeof passwordOrUser === 'object') {
       const directToken = emailOrToken;
       const directUser = passwordOrUser as User;
       setToken(directToken);
       setUser(directUser);
-      localStorage.setItem(TOKEN_KEY, directToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(directUser));
-      return { success: true };
+      writeAuthStorage(directToken, directUser);
+      return { success: true, token: directToken, user: directUser };
     }
 
     // Standard email/password login
@@ -124,9 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok && data.success) {
         setToken(data.token);
         setUser(data.user);
-        localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        return { success: true };
+        writeAuthStorage(data.token, data.user);
+        return { success: true, token: data.token, user: data.user };
       }
 
       return { success: false, message: data.message || 'Login failed' };
@@ -151,9 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok && data.success) {
         setToken(data.token);
         setUser(data.user);
-        localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        return { success: true };
+        writeAuthStorage(data.token, data.user);
+        return { success: true, token: data.token, user: data.user };
       }
 
       return { success: false, message: data.message || 'Registration failed' };
@@ -166,13 +200,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearAuthStorage();
   };
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
-    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    writeStoredUser(updatedUser);
   };
 
   const value: AuthContextType = {

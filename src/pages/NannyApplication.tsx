@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -41,37 +41,54 @@ const isAtLeast18 = (dateOfBirth: string) => {
   return age >= 18;
 };
 
+const initialNannyFormData = {
+  fullName: "",
+  email: "",
+  phone: "",
+  city: "",
+  state: "",
+  howDidYouHear: "",
+  dateOfBirth: "",
+  university: "",
+  yearsExperience: "",
+  experienceTypes: "",
+  ageGroupsWorkedWith: "",
+  experienceDescription: "",
+  churchName: "",
+  faithJourney: "",
+  whyCalledToServe: "",
+  availableStartDate: "",
+  availableEndDate: "",
+  hoursAvailable: "",
+  locationPreferences: "",
+  ageGroupPreferences: "",
+  additionalNotes: "",
+  agreeToTerms: false,
+  agreeToBackgroundCheck: false,
+};
+
 export default function NannyApplication() {
   const navigate = useNavigate();
   const runningAsApp = isStandaloneApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openModal, setOpenModal] = useState<'terms' | 'privacy' | null>(null);
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    city: "",
-    state: "",
-    howDidYouHear: "",
-    dateOfBirth: "",
-    university: "",
-    yearsExperience: "",
-    experienceTypes: "",
-    ageGroupsWorkedWith: "",
-    experienceDescription: "",
-    churchName: "",
-    faithJourney: "",
-    whyCalledToServe: "",
-    availableStartDate: "",
-    availableEndDate: "",
-    hoursAvailable: "",
-    locationPreferences: "",
-    ageGroupPreferences: "",
-    additionalNotes: "",
-    agreeToTerms: false,
-    agreeToBackgroundCheck: false,
-  });
+  const [formData, setFormData] = useState(initialNannyFormData);
+
+  useEffect(() => {
+    const resetCompletedApplication = () => {
+      if (sessionStorage.getItem('club_nanny_application_completed') === 'nanny') {
+        sessionStorage.removeItem('pendingApplication');
+        sessionStorage.removeItem('club_nanny_application_completed');
+        setFormData(initialNannyFormData);
+        setCurrentStep(1);
+      }
+    };
+
+    resetCompletedApplication();
+    window.addEventListener('pageshow', resetCompletedApplication);
+    return () => window.removeEventListener('pageshow', resetCompletedApplication);
+  }, []);
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });

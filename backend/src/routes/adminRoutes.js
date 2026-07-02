@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/authMiddleware.js';
+import { isValidEmail } from '../middleware/sanitize.js';
 import emailService from '../services/emailService.js';
 import stripeService from '../services/stripeService.js';
 import pdfService from '../services/pdfService.js';
@@ -1494,6 +1495,97 @@ router.get('/payments', async (req, res) => {
 // ============================================
 // USERS
 // ============================================
+
+router.patch('/settings/credentials', async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!email && !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a new username/email or password to update'
+      });
+    }
+
+    const admin = await User.findById(req.user.id).select('+password');
+    if (!admin || admin.role !== 'admin') {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin user not found'
+      });
+    }
+
+    const passwordMatches = await admin.comparePassword(currentPassword);
+    if (!passwordMatches) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    if (email) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      if (!isValidEmail(normalizedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Enter a valid email address'
+        });
+      }
+
+      const existing = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: admin._id }
+      });
+
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: 'Another user already uses that email address'
+        });
+      }
+
+      admin.email = normalizedEmail;
+    }
+
+    if (newPassword) {
+      if (String(newPassword).length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'New password must be at least 8 characters'
+        });
+      }
+      admin.password = newPassword;
+    }
+
+    await admin.save();
+
+    res.json({
+      success: true,
+      message: 'Admin credentials updated successfully',
+      user: {
+        id: admin._id,
+        email: admin.email,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        role: admin.role
+      }
+    });
+  } catch (error) {
+    console.error('Update admin credentials error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update admin credentials',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 router.get('/users', async (req, res) => {
   try {

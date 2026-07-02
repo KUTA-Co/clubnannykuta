@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -20,35 +20,52 @@ const steps = [
   { id: 4, name: "Preferences", icon: Sparkles },
 ];
 
+const initialFamilyFormData = {
+  parentName: "",
+  email: "",
+  phone: "",
+  city: "",
+  state: "",
+  howDidYouHear: "",
+  numberOfChildren: "",
+  childrenAges: "",
+  startDate: "",
+  endDate: "",
+  hoursPerWeek: "",
+  schedule: "",
+  specialNeeds: "",
+  churchName: "",
+  faithBackground: "",
+  valuesImportant: "",
+  preferredAge: "",
+  preferredExperience: "",
+  personalityPreferences: "",
+  additionalNotes: "",
+  agreeToTerms: false,
+};
+
 export default function FamilyApplication() {
   const navigate = useNavigate();
   const runningAsApp = isStandaloneApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openModal, setOpenModal] = useState<'terms' | 'privacy' | null>(null);
-  const [formData, setFormData] = useState({
-    parentName: "",
-    email: "",
-    phone: "",
-    city: "",
-    state: "",
-    howDidYouHear: "",
-    numberOfChildren: "",
-    childrenAges: "",
-    startDate: "",
-    endDate: "",
-    hoursPerWeek: "",
-    schedule: "",
-    specialNeeds: "",
-    churchName: "",
-    faithBackground: "",
-    valuesImportant: "",
-    preferredAge: "",
-    preferredExperience: "",
-    personalityPreferences: "",
-    additionalNotes: "",
-    agreeToTerms: false,
-  });
+  const [formData, setFormData] = useState(initialFamilyFormData);
+
+  useEffect(() => {
+    const resetCompletedApplication = () => {
+      if (sessionStorage.getItem('club_nanny_application_completed') === 'family') {
+        sessionStorage.removeItem('pendingApplication');
+        sessionStorage.removeItem('club_nanny_application_completed');
+        setFormData(initialFamilyFormData);
+        setCurrentStep(1);
+      }
+    };
+
+    resetCompletedApplication();
+    window.addEventListener('pageshow', resetCompletedApplication);
+    return () => window.removeEventListener('pageshow', resetCompletedApplication);
+  }, []);
 
   const handleChange = (field: string, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });

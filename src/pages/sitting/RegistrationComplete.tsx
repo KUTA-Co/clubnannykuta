@@ -74,6 +74,7 @@ export default function RegistrationComplete() {
         // Clear stored data
         clearRegistrationData(storageKey);
         clearRegistrationData(type === 'sitter' ? 'sitterRegistrationCheckout' : 'familyRegistrationCheckout');
+        sessionStorage.setItem('club_nanny_sitting_registration_completed', type);
 
         // Log the user in
         if (result.token) {

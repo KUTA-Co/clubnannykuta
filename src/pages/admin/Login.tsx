@@ -8,7 +8,7 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,18 +24,11 @@ export default function AdminLogin() {
     const result = await login(email, password);
 
     if (result.success) {
-      // Check if user is admin after login
-      const user = localStorage.getItem("club_nanny_user");
-
-      if (user) {
-        const userData = JSON.parse(user);
-        if (userData.role === "admin") {
-          navigate("/admin", { replace: true });
-        } else {
-          setError("Access denied. Admin privileges required.");
-          localStorage.removeItem("club_nanny_token");
-          localStorage.removeItem("club_nanny_user");
-        }
+      if (result.user?.role === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        setError("Access denied. Admin privileges required.");
+        logout();
       }
     } else {
       setError(result.message || "Login failed. Please try again.");

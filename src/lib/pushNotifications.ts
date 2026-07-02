@@ -7,7 +7,7 @@ let cachedVapidPublicKey: string | null = VAPID_PUBLIC_KEY || null;
 // Read the stored auth token so subscriptions get associated with the logged-in user
 function getAuthToken(): string | null {
   try {
-    return localStorage.getItem('club_nanny_token');
+    return sessionStorage.getItem('club_nanny_token') || localStorage.getItem('club_nanny_token');
   } catch {
     return null;
   }

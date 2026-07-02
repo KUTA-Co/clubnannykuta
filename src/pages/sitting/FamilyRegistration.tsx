@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isStandaloneApp } from "@/lib/pwa";
 import {
   getRegistrationCheckout,
+  clearRegistrationData,
   getRegistrationData,
   saveRegistrationCheckout,
   saveRegistrationData
@@ -120,6 +121,22 @@ export default function FamilyRegistration() {
   });
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = form;
+
+  useEffect(() => {
+    const resetCompletedRegistration = () => {
+      if (sessionStorage.getItem('club_nanny_sitting_registration_completed') === 'sitting_family') {
+        clearRegistrationData('familyRegistrationData');
+        clearRegistrationData('familyRegistrationCheckout');
+        sessionStorage.removeItem('club_nanny_sitting_registration_completed');
+        form.reset(emptyDefaults);
+        setStep(1);
+      }
+    };
+
+    resetCompletedRegistration();
+    window.addEventListener('pageshow', resetCompletedRegistration);
+    return () => window.removeEventListener('pageshow', resetCompletedRegistration);
+  }, [form]);
 
   const validateStep = async (currentStep: number): Promise<boolean> => {
     let fieldsToValidate: (keyof FormData)[] = [];
@@ -338,7 +355,7 @@ export default function FamilyRegistration() {
 
           {/* Form Card */}
           <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
               {/* Step 1: Account */}
               {step === 1 && (
                 <div className="space-y-4">

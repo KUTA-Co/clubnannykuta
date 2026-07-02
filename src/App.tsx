@@ -42,6 +42,7 @@ import AdminContacts from "./pages/admin/Contacts";
 import AdminSittingSitters from "./pages/admin/SittingSitters";
 import AdminSittingSitterDetail from "./pages/admin/SittingSitterDetail";
 import AdminSittingFamilies from "./pages/admin/SittingFamilies";
+import AdminSettings from "./pages/admin/Settings";
 
 // Club Nanny sitter-side pages
 const SitterRegistration = lazy(() => import("./pages/sitting/SitterRegistration"));
@@ -195,6 +196,7 @@ const App = () => {
                 <Route path="sitting-families" element={<AdminSittingFamilies />} />
                 <Route path="sitters" element={<AdminSittingSitters />} />
                 <Route path="sitters/:id" element={<AdminSittingSitterDetail />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
 
               {/* Legal Pages */}

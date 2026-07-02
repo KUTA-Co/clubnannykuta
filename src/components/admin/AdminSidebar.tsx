@@ -8,7 +8,8 @@ import {
   MessageSquare,
   Baby,
   Home,
-  LogOut
+  LogOut,
+  Settings
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { path: "/admin/sitters", label: "Sitters", icon: Baby },
   { path: "/admin/payments", label: "Payments", icon: CreditCard },
   { path: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },
+  { path: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminSidebar() {

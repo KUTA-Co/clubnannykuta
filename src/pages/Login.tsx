@@ -12,6 +12,14 @@ import { resolveSittingAppRoute } from "@/lib/sittingAppRoute";
 
 const TOKEN_KEY = "club_nanny_token";
 
+const getStoredToken = () => {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -25,11 +33,11 @@ export default function Login() {
   // Where to send the user after a successful login. We ask the backend which
   // sitting profile(s) they actually have, so a nanny-program "family" with no
   // sitting profile doesn't land on a broken dashboard.
-  const redirectAfterLogin = async () => {
+  const redirectAfterLogin = async (authToken?: string) => {
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
     if (from) return navigate(from, { replace: true });
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = authToken || getStoredToken();
     const target = await resolveSittingAppRoute(token);
     navigate(target, { replace: true });
   };
@@ -42,7 +50,7 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        await redirectAfterLogin();
+        await redirectAfterLogin(result.token);
       } else {
         toast({
           title: "Sign in failed",
