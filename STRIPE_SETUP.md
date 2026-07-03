@@ -37,7 +37,7 @@ The webhook is what tells the app "payment succeeded → mark the booking/regist
 it, money is taken but the booking won't flip to **Paid**.
 
 1. Stripe Dashboard → **Developers → Webhooks → Add endpoint**.
-2. **Endpoint URL:** `https://www.clubnanny.com/api/stripe/webhook`
+2. **Endpoint URL:** `https://club-nanny-api-kuta.vercel.app/api/stripe/webhook`
 3. **Events to send:** `checkout.session.completed` and `checkout.session.expired`
 4. Save, then click **Reveal** on the **Signing secret** (`whsec_…`) and put it in
    `STRIPE_WEBHOOK_SECRET` (step 1).

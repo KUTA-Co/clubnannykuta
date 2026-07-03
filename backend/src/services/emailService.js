@@ -20,7 +20,7 @@ if (process.env.MAILGUN_API_KEY) {
   console.warn('⚠️  MAILGUN_API_KEY not set — emails will be skipped (set it in backend/.env to enable email).');
 }
 
-const DOMAIN = process.env.MAILGUN_DOMAIN || 'noreply.clubnanny.com';
+const DOMAIN = process.env.MAILGUN_DOMAIN || 'mg.clubnanny.com';
 const PUBLIC_CONTACT_EMAIL = 'leigh@clubnanny.com';
 const DEFAULT_FROM_EMAIL = `Club Nanny <noreply@${DOMAIN}>`;
 const configuredFromEmail = process.env.FROM_EMAIL || DEFAULT_FROM_EMAIL;
