@@ -65,6 +65,25 @@ function withEmailInlineDefaults(content) {
     .replace(/class="help-text"(?![^>]*style=)/g, `class="help-text" style="${HELP_TEXT_STYLE}"`);
 }
 
+function htmlToPlainText(html) {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<\/(p|div|h[1-6]|li|tr|table|section|article)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // Base email template wrapper with Club Nanny branding
 const baseTemplate = (content) => {
   const normalizedContent = withEmailInlineDefaults(content);
@@ -943,11 +962,16 @@ class EmailService {
       return { success: false, error: 'Email not configured' };
     }
     try {
+      const text = htmlToPlainText(html);
       const result = await this.mg.messages.create(this.domain, {
         from: this.from,
         to: Array.isArray(to) ? to : [to],
         'h:Reply-To': this.replyTo,
+        'o:tracking': 'no',
+        'o:tracking-clicks': 'no',
+        'o:tracking-opens': 'no',
         subject,
+        text,
         html
       });
 
