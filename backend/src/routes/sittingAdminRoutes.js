@@ -1,11 +1,16 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/authMiddleware.js';
 import {
+  User,
+  PushSubscription,
+  Notification,
   SitterProfile,
   SittingFamilyProfile,
   BookingRequest,
   SitterResponse,
-  Review
+  SitterAvailability,
+  Review,
+  FamilyReview
 } from '../models/index.js';
 import stripeService from '../services/stripeService.js';
 import emailService from '../services/emailService.js';
@@ -145,6 +150,54 @@ router.get('/sitters/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get sitter'
+    });
+  }
+});
+
+/**
+ * DELETE /api/admin/sitting/sitters/:id
+ * Remove a sitter profile and its sitter-side app data.
+ */
+router.delete('/sitters/:id', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    const userId = sitter.userId;
+
+    await Promise.all([
+      SitterResponse.deleteMany({ sitterId: sitter._id }),
+      SitterAvailability.deleteMany({ sitterId: sitter._id }),
+      Review.deleteMany({ sitterId: sitter._id }),
+      FamilyReview.deleteMany({ sitterId: sitter._id }),
+      BookingRequest.updateMany(
+        { confirmedSitterId: sitter._id, status: { $in: ['open', 'responses_received', 'confirmed'] } },
+        { $unset: { confirmedSitterId: '', confirmedAt: '' }, $set: { status: 'open' } }
+      ),
+      userId ? PushSubscription.deleteMany({ userId }) : Promise.resolve(),
+      userId ? Notification.deleteMany({ userId }) : Promise.resolve()
+    ]);
+
+    await SitterProfile.deleteOne({ _id: sitter._id });
+    if (userId) {
+      await User.deleteOne({ _id: userId });
+    }
+
+    res.json({
+      success: true,
+      message: 'Sitter removed successfully'
+    });
+  } catch (error) {
+    console.error('Delete sitter error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove sitter'
     });
   }
 });
@@ -378,26 +431,23 @@ router.put('/sitters/:id/reject', async (req, res) => {
     let membershipRefund = null;
     const membershipRefundAmount = sitter.membershipFeeAmountCents || 0;
 
-    if (membershipRefundAmount > 0 && !sitter.membershipFeeRefundedAt) {
-      if (!sitter.stripePaymentIntentId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cannot refund the membership fee because this sitter has no Stripe payment intent recorded.'
+    if (membershipRefundAmount > 0 && !sitter.membershipFeeRefundedAt && sitter.stripePaymentIntentId) {
+      try {
+        membershipRefund = await stripeService.refundPaymentIntent({
+          paymentIntentId: sitter.stripePaymentIntentId,
+          amount: membershipRefundAmount,
+          metadata: {
+            refundType: 'sitter_membership_rejection',
+            sitterProfileId: sitter._id.toString(),
+            sitterEmail: sitter.email
+          }
         });
+
+        sitter.membershipFeeRefundId = membershipRefund.id;
+        sitter.membershipFeeRefundedAt = new Date();
+      } catch (refundError) {
+        console.error('Sitter rejection refund failed:', refundError.message);
       }
-
-      membershipRefund = await stripeService.refundPaymentIntent({
-        paymentIntentId: sitter.stripePaymentIntentId,
-        amount: membershipRefundAmount,
-        metadata: {
-          refundType: 'sitter_membership_rejection',
-          sitterProfileId: sitter._id.toString(),
-          sitterEmail: sitter.email
-        }
-      });
-
-      sitter.membershipFeeRefundId = membershipRefund.id;
-      sitter.membershipFeeRefundedAt = new Date();
     }
 
     sitter.status = 'rejected';
@@ -600,6 +650,52 @@ router.get('/families/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to get family'
+    });
+  }
+});
+
+/**
+ * DELETE /api/admin/sitting/families/:id
+ * Remove a sitter-family profile and its app-side data.
+ */
+router.delete('/families/:id', async (req, res) => {
+  try {
+    const family = await SittingFamilyProfile.findById(req.params.id);
+
+    if (!family) {
+      return res.status(404).json({
+        success: false,
+        message: 'Family not found'
+      });
+    }
+
+    const userId = family.userId;
+    const requests = await BookingRequest.find({ familyId: family._id }).select('_id');
+    const requestIds = requests.map((request) => request._id);
+
+    await Promise.all([
+      SitterResponse.deleteMany({ requestId: { $in: requestIds } }),
+      Review.deleteMany({ familyId: family._id }),
+      FamilyReview.deleteMany({ familyId: family._id }),
+      BookingRequest.deleteMany({ familyId: family._id }),
+      userId ? PushSubscription.deleteMany({ userId }) : Promise.resolve(),
+      userId ? Notification.deleteMany({ userId }) : Promise.resolve()
+    ]);
+
+    await SittingFamilyProfile.deleteOne({ _id: family._id });
+    if (userId) {
+      await User.deleteOne({ _id: userId });
+    }
+
+    res.json({
+      success: true,
+      message: 'Sitter family removed successfully'
+    });
+  } catch (error) {
+    console.error('Delete sitting family error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove sitter family'
     });
   }
 });

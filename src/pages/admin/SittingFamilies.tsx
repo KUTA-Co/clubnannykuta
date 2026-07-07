@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuthFetch } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Home, UserCheck, MapPin, Mail, Loader2 } from "lucide-react";
+import { Search, Filter, Home, UserCheck, MapPin, Mail, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SittingFamily {
@@ -49,6 +49,7 @@ export default function SittingFamilies() {
   const [families, setFamilies] = useState<SittingFamily[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingConfirmationId, setSendingConfirmationId] = useState<string | null>(null);
+  const [deletingFamilyId, setDeletingFamilyId] = useState<string | null>(null);
   const [expandedFamilyId, setExpandedFamilyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -112,6 +113,29 @@ export default function SittingFamilies() {
       toast({ title: "Error", description: "Failed to send confirmation email", variant: "destructive" });
     } finally {
       setSendingConfirmationId(null);
+    }
+  };
+
+  const removeFamily = async (family: SittingFamily) => {
+    if (!confirm(`Remove ${family.householdName}? This will remove their sitter-family profile, app access, and sitter requests.`)) return;
+
+    setDeletingFamilyId(family._id);
+    try {
+      const res = await authFetch(`/api/admin/sitting/families/${family._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to remove sitter family");
+
+      toast({ title: "Sitter Family Removed", description: `${family.householdName} has been removed.` });
+      fetchFamilies();
+      fetchStats();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to remove sitter family",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingFamilyId(null);
     }
   };
 
@@ -225,6 +249,16 @@ export default function SittingFamilies() {
                     >
                       {sendingConfirmationId === family._id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
                       Send Confirmation Email
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeFamily(family)}
+                      disabled={deletingFamilyId === family._id}
+                      className="border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      {deletingFamilyId === family._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>

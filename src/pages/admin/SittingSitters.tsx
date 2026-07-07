@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuthFetch } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Users, UserCheck, Clock, ChevronRight } from "lucide-react";
+import { Search, Filter, Users, UserCheck, Clock, ChevronRight, Trash2, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Sitter {
   _id: string;
@@ -29,8 +30,10 @@ const statusStyles: Record<string, { bg: string; color: string }> = {
 
 export default function SittingSitters() {
   const authFetch = useAuthFetch();
+  const { toast } = useToast();
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0 });
@@ -71,6 +74,29 @@ export default function SittingSitters() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchSitters();
+  };
+
+  const removeSitter = async (sitter: Sitter) => {
+    if (!confirm(`Remove ${sitter.firstName} ${sitter.lastName}? This will remove their sitter profile and app access.`)) return;
+
+    setDeletingId(sitter._id);
+    try {
+      const res = await authFetch(`/api/admin/sitting/sitters/${sitter._id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to remove sitter");
+
+      toast({ title: "Sitter Removed", description: `${sitter.firstName} ${sitter.lastName} has been removed.` });
+      fetchSitters();
+      fetchStats();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to remove sitter",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const formatDate = (s: string) => new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -150,26 +176,37 @@ export default function SittingSitters() {
           {sitters.map((s) => {
             const style = statusStyles[s.status] || { bg: "#EEE", color: "#555" };
             return (
-              <Link
+              <div
                 key={s._id}
-                to={`/admin/sitters/${s._id}`}
                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
               >
-                <div>
-                  <p className="font-semibold text-[#1A1A1A]">{s.firstName} {s.lastName}</p>
-                  <p className="text-sm text-gray-500">{s.email} • {s.city}, {s.state}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-gray-400">{formatDate(s.createdAt)}</span>
-                  <span
-                    className="px-3 py-1 rounded-full text-xs font-medium capitalize"
-                    style={{ backgroundColor: style.bg, color: style.color }}
-                  >
-                    {s.status.replace(/_/g, " ")}
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
-                </div>
-              </Link>
+                <Link to={`/admin/sitters/${s._id}`} className="flex flex-1 items-center justify-between pr-4">
+                  <div>
+                    <p className="font-semibold text-[#1A1A1A]">{s.firstName} {s.lastName}</p>
+                    <p className="text-sm text-gray-500">{s.email} • {s.city}, {s.state}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-gray-400">{formatDate(s.createdAt)}</span>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-medium capitalize"
+                      style={{ backgroundColor: style.bg, color: style.color }}
+                    >
+                      {s.status.replace(/_/g, " ")}
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-gray-300" />
+                  </div>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => removeSitter(s)}
+                  disabled={deletingId === s._id}
+                  className="border-red-200 text-red-600 hover:bg-red-50"
+                >
+                  {deletingId === s._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </Button>
+              </div>
             );
           })}
         </div>
