@@ -363,6 +363,53 @@ router.delete('/sitters/:id/reviews/:reviewId', async (req, res) => {
 });
 
 /**
+ * PUT /api/admin/sitting/sitters/:id/reviews/:reviewId/approve
+ * Approve a pending sitter review and recompute the sitter rating.
+ */
+router.put('/sitters/:id/reviews/:reviewId/approve', async (req, res) => {
+  try {
+    const sitter = await SitterProfile.findById(req.params.id);
+
+    if (!sitter) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sitter not found'
+      });
+    }
+
+    const review = await Review.findOneAndUpdate(
+      {
+        _id: req.params.reviewId,
+        sitterId: sitter._id
+      },
+      { status: 'approved' },
+      { new: true }
+    );
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Review not found'
+      });
+    }
+
+    await matchingService.recomputeSitterRating(sitter._id);
+
+    res.json({
+      success: true,
+      message: 'Review approved',
+      review
+    });
+  } catch (error) {
+    console.error('Approve sitter review error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve review'
+    });
+  }
+});
+
+/**
  * PUT /api/admin/sitting/sitters/:id/approve
  * Approve a sitter
  */

@@ -46,6 +46,7 @@ interface SitterReview {
   _id: string;
   rating: number;
   comment?: string;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   familyId?: {
     householdName?: string;
@@ -68,6 +69,7 @@ export default function SittingSitterDetail() {
   const [sendingConfirmation, setSendingConfirmation] = useState(false);
   const [sendingApproval, setSendingApproval] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [approvingReviewId, setApprovingReviewId] = useState<string | null>(null);
 
   const fetchSitter = async () => {
     setLoading(true);
@@ -143,6 +145,25 @@ export default function SittingSitterDetail() {
       toast({ title: "Error", description: "Failed to delete review", variant: "destructive" });
     } finally {
       setDeletingReviewId(null);
+    }
+  };
+
+  const approveReview = async (reviewId: string) => {
+    setApprovingReviewId(reviewId);
+    try {
+      const res = await authFetch(`/api/admin/sitting/sitters/${id}/reviews/${reviewId}/approve`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: "Review Approved", description: "The review is now visible on the sitter profile." });
+        fetchReviews();
+        fetchSitter();
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to approve review", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to approve review", variant: "destructive" });
+    } finally {
+      setApprovingReviewId(null);
     }
   };
 
@@ -324,21 +345,40 @@ export default function SittingSitterDetail() {
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star key={n} className="w-4 h-4" style={{ color: "#C77DA3" }} fill={n <= review.rating ? "#C77DA3" : "none"} />
                       ))}
+                      <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                        review.status === "pending"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-green-100 text-green-800"
+                      }`}>
+                        {review.status || "approved"}
+                      </span>
                       <span className="ml-2 text-xs text-gray-500">
                         {review.familyId?.householdName || review.familyId?.email || "Family"} · {new Date(review.createdAt).toLocaleDateString("en-US")}
                       </span>
                     </div>
                     {review.comment && <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{review.comment}</p>}
                   </div>
-                  <Button
-                    onClick={() => deleteReview(review._id)}
-                    disabled={deletingReviewId === review._id}
-                    size="sm"
-                    variant="outline"
-                    className="shrink-0 text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    {deletingReviewId === review._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  </Button>
+                  <div className="flex shrink-0 gap-2">
+                    {review.status === "pending" && (
+                      <Button
+                        onClick={() => approveReview(review._id)}
+                        disabled={approvingReviewId === review._id}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {approvingReviewId === review._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => deleteReview(review._id)}
+                      disabled={deletingReviewId === review._id}
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      {deletingReviewId === review._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

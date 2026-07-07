@@ -533,18 +533,15 @@ export default function SitterProfile() {
             </CardContent>
           </Card>
 
-          {/* Reviews */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Star className="w-5 h-5" style={{ color: '#C77DA3' }} fill={profile?.reviewCount ? '#C77DA3' : 'none'} />
-                Family Reviews
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {reviews.length === 0 ? (
-                <p className="text-sm text-[#4A4A4A]/60">No reviews yet.</p>
-              ) : (
+          {reviews.length > 0 && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="w-5 h-5" style={{ color: '#C77DA3' }} fill="#C77DA3" />
+                  Family Reviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-3">
                   {reviews.map((review) => (
                     <div key={review._id} className="rounded-xl border border-[#F5D5E5] p-4">
@@ -569,9 +566,9 @@ export default function SitterProfile() {
                     </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Notifications */}
           <Card className="md:col-span-2">

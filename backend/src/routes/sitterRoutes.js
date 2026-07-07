@@ -873,7 +873,13 @@ router.get('/reviews', async (req, res) => {
       });
     }
 
-    const reviews = await Review.find({ sitterId: profile._id })
+    const reviews = await Review.find({
+      sitterId: profile._id,
+      $or: [
+        { status: 'approved' },
+        { status: { $exists: false } }
+      ]
+    })
       .populate('familyId', 'householdName')
       .sort({ createdAt: -1 });
 

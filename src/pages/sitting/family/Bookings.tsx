@@ -85,12 +85,7 @@ function SitterRatingSummary({
   reviewCount?: number;
 }) {
   if (!reviewCount) {
-    return (
-      <p className="mt-1 flex items-center gap-1 text-xs text-[#4A4A4A]/55">
-        <Star className="h-3.5 w-3.5" style={{ color: '#C77DA3' }} />
-        No reviews yet
-      </p>
-    );
+    return null;
   }
 
   return (

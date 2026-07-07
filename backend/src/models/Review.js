@@ -30,6 +30,12 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 1000
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+    index: true
   }
 }, {
   timestamps: true

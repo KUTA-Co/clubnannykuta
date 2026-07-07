@@ -1145,14 +1145,13 @@ router.post('/bookings/:id/review', async (req, res) => {
       sitterId: booking.confirmedSitterId,
       familyId: profile._id,
       rating,
-      comment: comment || ''
+      comment: comment || '',
+      status: 'pending'
     });
-
-    // Update the sitter's denormalized rating
-    await matchingService.recomputeSitterRating(booking.confirmedSitterId);
 
     res.status(201).json({
       success: true,
+      message: 'Review submitted and awaiting admin approval.',
       review
     });
   } catch (error) {

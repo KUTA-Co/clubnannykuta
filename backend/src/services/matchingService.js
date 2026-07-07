@@ -254,7 +254,13 @@ class MatchingService {
   async getSitterReviews(sitterId, limit = 5) {
     if (!sitterId) return [];
 
-    return Review.find({ sitterId })
+    return Review.find({
+      sitterId,
+      $or: [
+        { status: 'approved' },
+        { status: { $exists: false } }
+      ]
+    })
       .populate('familyId', 'householdName')
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -317,7 +323,15 @@ class MatchingService {
   async recomputeSitterRating(sitterId) {
     const sitterObjectId = new mongoose.Types.ObjectId(sitterId);
     const stats = await Review.aggregate([
-      { $match: { sitterId: sitterObjectId } },
+      {
+        $match: {
+          sitterId: sitterObjectId,
+          $or: [
+            { status: 'approved' },
+            { status: { $exists: false } }
+          ]
+        }
+      },
       {
         $group: {
           _id: '$sitterId',

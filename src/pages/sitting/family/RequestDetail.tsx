@@ -219,12 +219,7 @@ function SitterReviewSummary({
   reviewCount?: number;
 }) {
   if (!reviewCount) {
-    return (
-      <p className="mt-1 flex items-center gap-1 text-sm text-[#4A4A4A]/55">
-        <Star className="h-4 w-4" style={{ color: '#C77DA3' }} />
-        No reviews yet
-      </p>
-    );
+    return null;
   }
 
   return (
@@ -240,11 +235,7 @@ function SitterReviewSummary({
 
 function SitterReviewsList({ reviews }: { reviews?: SitterReview[] }) {
   if (!reviews?.length) {
-    return (
-      <div className="rounded-xl bg-gray-50 p-3 text-sm text-[#4A4A4A]/60">
-        No reviews yet.
-      </div>
-    );
+    return null;
   }
 
   return (

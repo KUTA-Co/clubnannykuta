@@ -112,7 +112,9 @@ export default function SitterDashboard() {
         <div className="bg-white rounded-2xl p-4 border border-gray-100">
           <Star className="w-6 h-6 mb-2 text-yellow-400 fill-yellow-400" />
           <p className="text-3xl font-bold text-[#4A4A4A]">{stats.reviewCount > 0 ? stats.rating.toFixed(1) : '—'}</p>
-          <p className="text-sm text-[#4A4A4A]/60">{stats.reviewCount > 0 ? `Rating (${stats.reviewCount})` : 'No reviews yet'}</p>
+          {stats.reviewCount > 0 && (
+            <p className="text-sm text-[#4A4A4A]/60">Rating ({stats.reviewCount})</p>
+          )}
         </div>
       </div>
 
